@@ -5,10 +5,49 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 
 const PROFILE_IMAGE_KEY_PREFIX = 'swiftfund_profile_';
-const PROFILE_IMAGE_MAX_SIZE = 128;
+const PROFILE_IMAGE_MAX_SIZE = 256; // Resize to this (square) for upload and display
 
 function getProfileStorageKey(userId: string | undefined): string | null {
   return userId ? `${PROFILE_IMAGE_KEY_PREFIX}${userId}` : null;
+}
+
+/** Resize image to a square of at most PROFILE_IMAGE_MAX_SIZE, center-cropped; returns a new File. */
+function resizeImageFile(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const dim = Math.min(img.naturalWidth, img.naturalHeight, PROFILE_IMAGE_MAX_SIZE);
+      const canvas = document.createElement('canvas');
+      canvas.width = dim;
+      canvas.height = dim;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      const sx = (img.naturalWidth - dim) / 2;
+      const sy = (img.naturalHeight - dim) / 2;
+      ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg') || 'avatar.jpg', { type: 'image/jpeg' }));
+          } else {
+            resolve(file);
+          }
+        },
+        'image/jpeg',
+        0.88
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
 }
 
 export default function LoginButton() {
@@ -108,8 +147,9 @@ export default function LoginButton() {
         setUploadingAvatar(false);
         return;
       }
+      const resizedFile = await resizeImageFile(file);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', resizedFile);
       const res = await fetch('/api/profile/avatar', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -205,7 +245,11 @@ export default function LoginButton() {
               aria-label="Profile menu"
             >
               {profileImageUrl ? (
-                <img src={profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
+                <img
+                  src={profileImageUrl}
+                  alt="Profile"
+                  className="h-full w-full object-cover object-center aspect-square"
+                />
               ) : (
                 <svg
                   className="h-5 w-5 text-neutral-400"

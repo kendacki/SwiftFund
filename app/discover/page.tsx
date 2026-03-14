@@ -2,22 +2,17 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePrivy } from '@privy-io/react-auth';
-import ProjectCard, {
-  ProjectCardProps,
-  ProjectCardStats,
-} from '@/components/ProjectCard';
+import ProjectCard from '@/components/ProjectCard';
+import type { ProjectCardProps } from '@/components/ProjectCard';
+import type { Project } from '@/lib/projects';
 
 type FilterKey = 'all' | 'trending' | 'endingSoon';
 
-interface Project extends Omit<ProjectCardProps, 'onFundClick'> {
-  tags: FilterKey[];
-}
-
-const PROJECTS: Project[] = [
+const MOCK_PROJECTS: ProjectCardProps[] = [
   {
     id: 'creator-1',
     creatorName: 'Channel Redstone',
@@ -31,7 +26,6 @@ const PROJECTS: Project[] = [
       backersLabel: '1,240',
       timeLeftLabel: '4 Days',
     },
-    tags: ['all', 'trending'],
   },
   {
     id: 'creator-2',
@@ -46,7 +40,6 @@ const PROJECTS: Project[] = [
       backersLabel: '540',
       timeLeftLabel: '9 Days',
     },
-    tags: ['all'],
   },
   {
     id: 'creator-3',
@@ -61,13 +54,37 @@ const PROJECTS: Project[] = [
       backersLabel: '2,015',
       timeLeftLabel: '36 Hours',
     },
-    tags: ['all', 'trending', 'endingSoon'],
   },
 ];
+
+function toCardProps(p: Project): ProjectCardProps {
+  const progressPercent = p.goalAmount > 0
+    ? Math.min(100, Math.round((p.amountRaised / p.goalAmount) * 100))
+    : 0;
+  return {
+    id: p.id,
+    creatorName: p.creatorName,
+    handle: p.handle,
+    imageUrl: p.imageUrl || 'https://images.pexels.com/photos/6898859/pexels-photo-6898859.jpeg?auto=compress&w=120&h=120',
+    progressPercent,
+    stats: {
+      amountRaisedLabel: `$${p.amountRaised.toLocaleString()}`,
+      goalLabel: `$${p.goalAmount.toLocaleString()}`,
+      backersLabel: '0',
+      timeLeftLabel: '—',
+    },
+  };
+}
+
+interface DiscoverProject extends ProjectCardProps {
+  tags?: FilterKey[];
+}
 
 export default function DiscoverPage() {
   const { getAccessToken, authenticated } = usePrivy();
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [apiProjects, setApiProjects] = useState<DiscoverProject[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null
   );
@@ -75,17 +92,35 @@ export default function DiscoverPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetch('/api/projects?discover=1')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data?.projects) ? data.projects : [];
+        setApiProjects(list.map((p: Project) => ({ ...toCardProps(p), tags: p.tags || ['all'] })));
+      })
+      .catch(() => setApiProjects([]))
+      .finally(() => setProjectsLoading(false));
+  }, []);
+
+  const allProjects = useMemo(() => {
+    const fromApi = apiProjects;
+    const mockWithTags = MOCK_PROJECTS.map((p) => ({ ...p, tags: ['all'] as FilterKey[] }));
+    if (fromApi.length > 0) return [...fromApi, ...mockWithTags];
+    return mockWithTags;
+  }, [apiProjects]);
+
   const filteredProjects = useMemo(
     () =>
-      PROJECTS.filter((p) =>
-        activeFilter === 'all' ? true : p.tags.includes(activeFilter)
+      allProjects.filter((p) =>
+        activeFilter === 'all' ? true : (p.tags ?? ['all']).includes(activeFilter)
       ),
-    [activeFilter]
+    [activeFilter, allProjects]
   );
 
   const selectedProject = useMemo(
-    () => PROJECTS.find((p) => p.id === selectedProjectId) ?? null,
-    [selectedProjectId]
+    () => allProjects.find((p) => p.id === selectedProjectId) ?? null,
+    [selectedProjectId, allProjects]
   );
 
   const openModal = (projectId: string) => {
@@ -213,22 +248,28 @@ export default function DiscoverPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {filteredProjects.map((project, index) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-            >
-              <ProjectCard
-                {...project}
-                onFundClick={openModal}
-              />
-            </motion.div>
-          ))}
-        </div>
+        {projectsLoading ? (
+          <div className="text-sm text-neutral-500 py-8 text-center">
+            Loading projects…
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {filteredProjects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+              >
+                <ProjectCard
+                  {...project}
+                  onFundClick={openModal}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {selectedProject && (
