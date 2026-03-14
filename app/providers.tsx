@@ -2,15 +2,27 @@
 
 import { PrivyProvider } from '@privy-io/react-auth';
 
-const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? '';
-
-if (!appId) {
-  throw new Error(
-    'NEXT_PUBLIC_PRIVY_APP_ID is not set. Add it in Vercel under Settings → Environment Variables (Production and Preview), then redeploy.'
-  );
+interface ProvidersProps {
+  children: React.ReactNode;
+  appId: string;
 }
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({ children, appId }: ProvidersProps) {
+  if (!appId) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center px-4">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="font-heading text-xl font-bold text-white">
+            Auth not configured
+          </h1>
+          <p className="text-sm text-neutral-400">
+            Set <code className="rounded bg-neutral-800 px-1 py-0.5 text-xs">NEXT_PUBLIC_PRIVY_APP_ID</code> in your Vercel project (Settings → Environment Variables) for Production and Preview, then redeploy.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PrivyProvider
       appId={appId}

@@ -36,10 +36,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? '';
   return (
     <html lang="en" className={roboto.variable}>
       <body className="bg-neutral-950 text-white font-[verdana] antialiased">
-        <Providers>
+        <Providers appId={appId}>
           {children}
         </Providers>
       </body>
