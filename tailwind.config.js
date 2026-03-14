@@ -2,7 +2,11 @@
 export default {
   content: ["./app/**/*.{js,ts,jsx,tsx,mdx}", "./components/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        heading: ['var(--font-roboto)', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 };

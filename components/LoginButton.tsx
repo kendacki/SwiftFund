@@ -1,48 +1,49 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginButton() {
-  const { ready, authenticated, login, logout, user } = usePrivy();
+  const { login, logout, authenticated, user, ready } = usePrivy();
+  const router = useRouter();
 
-  // Prevent UI shifting before Privy loads
+  // If Privy is still initializing, show a ghost/loading state
   if (!ready) {
-    return <div className="h-10 w-32 bg-neutral-900 rounded-md animate-pulse"></div>;
-  }
-
-  if (authenticated) {
     return (
-      <div className="flex items-center gap-6">
-        <Link href="/portfolio" className="text-sm font-medium text-neutral-300 hover:text-white transition-colors">
-          Dashboard
-        </Link>
-        <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 py-1.5 px-3 rounded-md">
-          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
-          <span className="text-xs font-mono text-neutral-400">
-            {/* Added an extra ? after id to make strict TypeScript happy! */}
-            {user?.id?.split('did:privy:')[1]?.substring(0, 6)}...
-          </span>
-          <button 
-            onClick={logout} 
-            className="text-xs text-neutral-500 hover:text-red-400 ml-2 border-l border-neutral-700 pl-3 transition-colors"
-          >
-            Log Out
-          </button>
-        </div>
-      </div>
+      <div className="h-10 w-32 bg-neutral-900 animate-pulse rounded-lg border border-neutral-800" />
     );
   }
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={login}
-      className="bg-red-600 hover:bg-red-500 text-white text-sm font-bold py-2.5 px-6 rounded-md shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all border border-red-500/50"
-    >
-      Initialize Wallet
-    </motion.button>
+    <div className="flex items-center gap-4">
+      {authenticated ? (
+        <>
+          {/* Dashboard Link for Creators */}
+          <button 
+            onClick={() => router.push('/creator')}
+            className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
+          >
+            Dashboard
+          </button>
+
+          {/* User Wallet / Logout Button */}
+          <button
+            onClick={logout}
+            className="font-heading bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-2 rounded-lg border border-neutral-800 transition-all text-sm flex items-center gap-2"
+          >
+            <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+            {user?.wallet?.address?.substring(0, 6)}...{user?.wallet?.address?.slice(-4)}
+          </button>
+        </>
+      ) : (
+        /* The Main Login Trigger */
+        <button
+          onClick={login}
+          className="font-heading bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all transform hover:scale-105 active:scale-95"
+        >
+          Initialize Wallet
+        </button>
+      )}
+    </div>
   );
 }
