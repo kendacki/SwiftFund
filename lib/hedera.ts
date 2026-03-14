@@ -41,8 +41,6 @@ export async function executeDistribution(amountPerFan: number) {
   const fan2EvmAddress = AccountId.fromString('0.0.222222').toSolidityAddress();
   const fansArray = [`0x${fan1EvmAddress}`, `0x${fan2EvmAddress}`];
 
-  const payoutPerFan = BigInt(amountPerFan);
-
   const tx = new ContractExecuteTransaction()
     .setContractId(TREASURY_CONTRACT_ID)
     .setGas(1_500_000)
@@ -50,7 +48,7 @@ export async function executeDistribution(amountPerFan: number) {
       'distributeYield',
       new ContractFunctionParameters()
         .addAddressArray(fansArray)
-        .addUint256(payoutPerFan)
+        .addUint256(amountPerFan)
     );
 
   const submitExecTx = await tx.execute(client);
