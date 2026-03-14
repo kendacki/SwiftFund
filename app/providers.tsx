@@ -7,6 +7,16 @@ interface ProvidersProps {
   appId: string;
 }
 
+// Hedera Testnet for embedded wallet creation (chainId 296)
+// Helps avoid walletProxy.create timeout by targeting the correct chain.
+const hederaTestnet = {
+  id: 296,
+  name: 'Hedera Testnet',
+  nativeCurrency: { name: 'HBAR', symbol: 'HBAR', decimals: 8 },
+  rpcUrls: { default: { http: ['https://testnet.hashio.io/api'] } },
+  blockExplorers: { default: { name: 'HashScan', url: 'https://hashscan.io/testnet' } },
+} as const;
+
 export default function Providers({ children, appId }: ProvidersProps) {
   if (!appId) {
     return (
@@ -32,6 +42,8 @@ export default function Providers({ children, appId }: ProvidersProps) {
           accentColor: '#dc2626',
           showWalletLoginFirst: false,
         },
+        defaultChain: hederaTestnet,
+        supportedChains: [hederaTestnet],
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
