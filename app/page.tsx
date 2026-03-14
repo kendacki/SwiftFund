@@ -8,11 +8,11 @@ import LoginButton from '../components/LoginButton';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-red-500/30">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-red-500/30 overflow-x-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
 
-      <nav className="relative z-10 flex justify-between items-center max-w-7xl mx-auto px-6 py-6 border-b border-neutral-800/50">
-        <div className="flex items-center gap-2">
+      <nav className="relative z-10 flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-b border-neutral-800/50">
+        <div className="flex items-center gap-2 min-w-0">
           <a
             href="https://www.freelogovectors.net/swift-logo-2/"
             target="_blank"
@@ -28,12 +28,12 @@ export default function LandingPage() {
               height={24}
             />
           </a>
-          <span className="text-xl font-extrabold tracking-tight">SwiftFund</span>
+          <span className="text-lg sm:text-xl font-extrabold tracking-tight truncate">SwiftFund</span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           <Link
             href="/discover"
-            className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
+            className="text-xs sm:text-sm font-medium text-neutral-400 hover:text-white transition-colors"
           >
             Discover
           </Link>
@@ -41,7 +41,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      <main className="relative z-10 flex flex-col items-center justify-center pt-32 pb-20 px-6 max-w-4xl mx-auto text-center">
+      <main className="relative z-10 flex flex-col items-center justify-center pt-20 sm:pt-28 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -59,10 +59,10 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="font-heading text-6xl md:text-8xl font-black tracking-tight mb-8 leading-[1.1]"
+          className="font-heading text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 sm:mb-8 leading-[1.1]"
         >
-          Fund Your Next Project <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">
+          Fund Your Next Project{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800 sm:whitespace-nowrap">
             with your Community.
           </span>
         </motion.h1>
@@ -71,7 +71,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-neutral-400 mb-10 max-w-2xl leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-neutral-400 mb-8 sm:mb-10 max-w-2xl leading-relaxed"
         >
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
@@ -80,25 +80,25 @@ export default function LandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="flex gap-8 items-center justify-center border-t border-neutral-800/50 pt-10 mt-10 w-full"
+          className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-8 sm:pt-10 mt-8 sm:mt-10 w-full"
         >
-          <div className="text-center">
-            <p className="text-3xl font-bold text-white">200ms</p>
-            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">
+          <div className="text-center min-w-[4rem]">
+            <p className="text-2xl sm:text-3xl font-bold text-white">200ms</p>
+            <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               Consensus Speed
             </p>
           </div>
-          <div className="w-px h-12 bg-neutral-800" />
-          <div className="text-center">
-            <p className="text-3xl font-bold text-white">ERC-20</p>
-            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">
+          <div className="hidden sm:block w-px h-12 bg-neutral-800" />
+          <div className="text-center min-w-[4rem]">
+            <p className="text-2xl sm:text-3xl font-bold text-white">ERC-20</p>
+            <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               EVM Compatible
             </p>
           </div>
-          <div className="w-px h-12 bg-neutral-800" />
-          <div className="text-center">
-            <p className="text-3xl font-bold text-white">100%</p>
-            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">
+          <div className="hidden sm:block w-px h-12 bg-neutral-800" />
+          <div className="text-center min-w-[4rem]">
+            <p className="text-2xl sm:text-3xl font-bold text-white">100%</p>
+            <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               On-Chain Oracle
             </p>
           </div>

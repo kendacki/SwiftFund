@@ -29,20 +29,20 @@ export default function ProjectCard({
   const safeProgress = Math.max(0, Math.min(100, progressPercent));
 
   return (
-    <div className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 shadow-[0_0_20px_rgba(0,0,0,0.35)]">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-10 w-10 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center text-xs font-semibold">
+    <div className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4 sm:p-5 shadow-[0_0_20px_rgba(0,0,0,0.35)] min-w-0">
+      <div className="flex items-center gap-3 mb-3 sm:mb-4 min-w-0">
+        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-neutral-800 overflow-hidden flex-shrink-0">
           <img
             src={imageUrl}
             alt={creatorName}
             className="h-full w-full object-cover"
           />
         </div>
-        <div>
-          <p className="font-heading text-sm font-semibold text-white">
+        <div className="min-w-0">
+          <p className="font-heading text-sm font-semibold text-white truncate">
             {creatorName}
           </p>
-          <p className="text-xs text-neutral-400">{handle}</p>
+          <p className="text-xs text-neutral-400 truncate">{handle}</p>
         </div>
       </div>
 
@@ -61,7 +61,7 @@ export default function ProjectCard({
         </div>
       </div>
 
-      <div className="mt-3 mb-4 grid grid-cols-3 gap-3 text-xs">
+      <div className="mt-3 mb-4 grid grid-cols-3 gap-2 sm:gap-3 text-xs min-w-0">
         <div>
           <p className="text-neutral-500 mb-1">Amount Raised</p>
           <p className="font-heading text-sm text-white">
@@ -90,7 +90,7 @@ export default function ProjectCard({
 
       <button
         onClick={() => onFundClick(id)}
-        className="mt-auto inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 transition-colors"
+        className="mt-auto inline-flex items-center justify-center rounded-lg bg-red-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-red-500 transition-colors w-full sm:w-auto"
       >
         Fund This Project
       </button>
