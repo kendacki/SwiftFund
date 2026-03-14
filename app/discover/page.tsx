@@ -176,12 +176,22 @@ export default function DiscoverPage() {
           </Link>
         </div>
         <div className="mb-6 sm:mb-8 space-y-3 text-center sm:text-left">
-          <h1 className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 0.61, 0.36, 1] }}
+            className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight"
+          >
             Support Your Favorite Creators
-          </h1>
-          <p className="text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0">
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            className="text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0"
+          >
             Directly fund upcoming projects and earn a share of future revenue.
-          </p>
+          </motion.p>
         </div>
 
         <div className="mb-6 sm:mb-8 flex flex-wrap gap-2 sm:gap-3 border-b border-neutral-800 pb-4">
