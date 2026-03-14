@@ -8,10 +8,10 @@ import { usePrivy } from '@privy-io/react-auth';
 
 const SWIND_TOKEN_ID = process.env.NEXT_PUBLIC_SWIND_TOKEN_ID ?? '—';
 
-// Placeholder token breakdown; replace with real balances
+// Placeholder token breakdown; replace with real balances. Logos in public/logos/
 const MOCK_TOKENS = [
-  { symbol: 'HBAR', name: 'Hedera', amount: '—', equivalent: '—' },
-  { symbol: 'SWIND', name: 'SwiftFund', amount: '—', equivalent: '—' },
+  { symbol: 'HBAR', name: 'Hedera', amount: '—', equivalent: '—', logo: '/logos/hedera.png' },
+  { symbol: 'SWIND', name: 'SwiftFund', amount: '—', equivalent: '—', logo: '/logos/swind.png' },
 ];
 
 interface TxRow {
@@ -126,10 +126,15 @@ export default function PortfolioPage() {
                       className="flex items-center justify-between py-2 border-b border-neutral-800/60 last:border-0"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold text-red-500">
-                          {token.symbol.slice(0, 1)}
+                        <div className="h-8 w-8 rounded-lg bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 relative">
+                          <img
+                            src={token.logo}
+                            alt={token.name}
+                            className="h-full w-full object-contain"
+                          />
+                          <span className="sr-only">{token.name} logo</span>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-heading text-sm font-medium text-white">{token.symbol}</p>
                           <p className="text-xs text-neutral-500">{token.name}</p>
                         </div>
