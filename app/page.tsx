@@ -13,7 +13,18 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="relative z-10 flex justify-between items-center max-w-7xl mx-auto px-6 py-6 border-b border-neutral-800/50">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-red-600 rounded-sm shadow-[0_0_15px_rgba(220,38,38,0.5)]"></div>
+          <a
+            href="https://www.freelogovectors.net/swift-logo-2/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center"
+          >
+            <img
+              src="https://www.freelogovectors.net/wp-content/uploads/2019/10/swift-logo-program.png"
+              alt="Swift logo"
+              className="h-6 w-auto"
+            />
+          </a>
           <span className="text-xl font-extrabold tracking-tight">SwiftFund</span>
         </div>
         <LoginButton />
@@ -32,7 +43,7 @@ export default function LandingPage() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
           </span>
-          Hedera Testnet Live
+          Powered by Hedera
         </motion.div>
 
         <motion.h1 
@@ -41,9 +52,9 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight"
         >
-          Trustless Yield for <br />
+          Fund Your Next Project <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">
-            Digital Creators.
+            with your Community.
           </span>
         </motion.h1>
 
@@ -53,7 +64,7 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-lg md:text-xl text-neutral-400 mb-10 max-w-2xl leading-relaxed"
         >
-          Fractionalize YouTube revenue instantly. SwiftFund uses immutable AI Oracles to read API data and automatically distribute SWIND token yield to your fans via Hedera Smart Contracts.
+          Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
 
         {/* Trust Markers */}

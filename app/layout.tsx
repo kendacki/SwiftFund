@@ -1,8 +1,9 @@
 import './globals.css';
+import Providers from './providers';
 
 export const metadata = {
   title: 'SwiftFund',
-  description: 'Trustless Yield for Digital Creators',
+  description: 'Fund Your Next Project with your Community',
 };
 
 export default function RootLayout({
@@ -12,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-neutral-950 text-white">{children}</body>
+      <body className="bg-neutral-950 text-white">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }
