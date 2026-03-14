@@ -5,6 +5,12 @@ import { getPrivyClient } from '@/lib/privy';
 const AVATAR_PREFIX = 'avatars/';
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB (Vercel serverless limit)
 
+function ensureBlobToken(): void {
+  if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+    throw new Error('BLOB_READ_WRITE_TOKEN is not set. Add it in Vercel → Project → Storage → Blob.');
+  }
+}
+
 function getAuthUserId(req: Request): Promise<string | null> {
   const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
   if (!authToken) return Promise.resolve(null);
@@ -16,6 +22,7 @@ function getAuthUserId(req: Request): Promise<string | null> {
 
 export async function GET(req: Request) {
   try {
+    ensureBlobToken();
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,6 +43,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    ensureBlobToken();
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
