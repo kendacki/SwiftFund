@@ -18,8 +18,13 @@ export default function LoginButton() {
     <div className="flex items-center gap-4">
       {authenticated ? (
         <>
-          {/* Dashboard Link for Creators */}
-          <button 
+          <button
+            onClick={() => router.push('/portfolio')}
+            className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
+          >
+            Wallet
+          </button>
+          <button
             onClick={() => router.push('/creator')}
             className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
           >
