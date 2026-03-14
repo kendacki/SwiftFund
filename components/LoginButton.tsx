@@ -4,6 +4,13 @@ import { useRef, useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 
+const PROFILE_IMAGE_KEY_PREFIX = 'swiftfund_profile_';
+const PROFILE_IMAGE_MAX_SIZE = 128;
+
+function getProfileStorageKey(userId: string | undefined): string | null {
+  return userId ? `${PROFILE_IMAGE_KEY_PREFIX}${userId}` : null;
+}
+
 export default function LoginButton() {
   const { login, logout, authenticated, user, ready } = usePrivy();
   const router = useRouter();
@@ -11,6 +18,22 @@ export default function LoginButton() {
   const [copied, setCopied] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+
+  // Restore profile image from localStorage when user is available
+  useEffect(() => {
+    if (!authenticated || !user?.id) {
+      setProfileImageUrl(null);
+      return;
+    }
+    const key = getProfileStorageKey(user.id);
+    if (!key) return;
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      if (stored) setProfileImageUrl(stored);
+    } catch {
+      setProfileImageUrl(null);
+    }
+  }, [authenticated, user?.id]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -39,10 +62,43 @@ export default function LoginButton() {
 
   const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    if (profileImageUrl) URL.revokeObjectURL(profileImageUrl);
-    setProfileImageUrl(url);
+    if (!file || !user?.id) return;
+    const key = getProfileStorageKey(user.id);
+    if (!key) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      const saveAndSet = (url: string) => {
+        try {
+          localStorage.setItem(key, url);
+        } catch {
+          // quota exceeded or disabled; still show in session
+        }
+        setProfileImageUrl(url);
+      };
+      img.onload = () => {
+        const dim = Math.min(img.naturalWidth, img.naturalHeight, PROFILE_IMAGE_MAX_SIZE);
+        const canvas = document.createElement('canvas');
+        canvas.width = dim;
+        canvas.height = dim;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          saveAndSet(dataUrl);
+          return;
+        }
+        const sx = (img.naturalWidth - dim) / 2;
+        const sy = (img.naturalHeight - dim) / 2;
+        ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
+        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        saveAndSet(resizedDataUrl);
+      };
+      img.onerror = () => saveAndSet(dataUrl);
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   if (!ready) {
