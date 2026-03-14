@@ -12,28 +12,61 @@ function getProfileStorageKey(userId: string | undefined): string | null {
 }
 
 export default function LoginButton() {
-  const { login, logout, authenticated, user, ready } = usePrivy();
+  const { login, logout, authenticated, user, ready, getAccessToken } = usePrivy();
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Restore profile image from localStorage when user is available
+  // Restore profile image: fetch from API (backend), fallback to localStorage cache
   useEffect(() => {
     if (!authenticated || !user?.id) {
       setProfileImageUrl(null);
       return;
     }
     const key = getProfileStorageKey(user.id);
-    if (!key) return;
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    let cancelled = false;
+
+    const loadAvatar = async () => {
+      try {
+        const token = await getAccessToken();
+        if (cancelled || !token) {
+          const stored = key && typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+          if (stored) setProfileImageUrl(stored);
+          return;
+        }
+        const res = await fetch('/api/profile/avatar', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.url) {
+            setProfileImageUrl(data.url);
+            if (key) {
+              try {
+                localStorage.setItem(key, data.url);
+              } catch {
+                /* ignore */
+              }
+            }
+            return;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      if (cancelled) return;
+      const stored = key && typeof window !== 'undefined' ? localStorage.getItem(key) : null;
       if (stored) setProfileImageUrl(stored);
-    } catch {
-      setProfileImageUrl(null);
-    }
-  }, [authenticated, user?.id]);
+    };
+
+    loadAvatar();
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated, user?.id, getAccessToken]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -60,45 +93,83 @@ export default function LoginButton() {
     return `${addr.slice(0, 6)}xxxx${addr.slice(-4)}`;
   };
 
-  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.id) return;
     const key = getProfileStorageKey(user.id);
-    if (!key) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const img = new Image();
-      const saveAndSet = (url: string) => {
-        try {
-          localStorage.setItem(key, url);
-        } catch {
-          // quota exceeded or disabled; still show in session
-        }
-        setProfileImageUrl(url);
-      };
-      img.onload = () => {
-        const dim = Math.min(img.naturalWidth, img.naturalHeight, PROFILE_IMAGE_MAX_SIZE);
-        const canvas = document.createElement('canvas');
-        canvas.width = dim;
-        canvas.height = dim;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          saveAndSet(dataUrl);
-          return;
-        }
-        const sx = (img.naturalWidth - dim) / 2;
-        const sy = (img.naturalHeight - dim) / 2;
-        ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
-        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        saveAndSet(resizedDataUrl);
-      };
-      img.onerror = () => saveAndSet(dataUrl);
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+
+    setUploadingAvatar(true);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setUploadingAvatar(false);
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      if (data?.url) {
+        setProfileImageUrl(data.url);
+        if (key) {
+          try {
+            localStorage.setItem(key, data.url);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Profile upload failed:', err);
+      // Fallback: keep previous localStorage-only flow for this session if API fails
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const img = new Image();
+        const saveAndSet = (url: string) => {
+          try {
+            if (key) localStorage.setItem(key, url);
+          } catch {
+            /* ignore */
+          }
+          setProfileImageUrl(url);
+        };
+        img.onload = () => {
+          const dim = Math.min(img.naturalWidth, img.naturalHeight, PROFILE_IMAGE_MAX_SIZE);
+          const canvas = document.createElement('canvas');
+          canvas.width = dim;
+          canvas.height = dim;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            saveAndSet(dataUrl);
+            setUploadingAvatar(false);
+            return;
+          }
+          const sx = (img.naturalWidth - dim) / 2;
+          const sy = (img.naturalHeight - dim) / 2;
+          ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
+          saveAndSet(canvas.toDataURL('image/jpeg', 0.85));
+          setUploadingAvatar(false);
+        };
+        img.onerror = () => {
+          saveAndSet(dataUrl);
+          setUploadingAvatar(false);
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+      return;
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   if (!ready) {
@@ -174,14 +245,15 @@ export default function LoginButton() {
                   <label className="block text-xs text-neutral-500 uppercase tracking-wider mb-2">
                     Profile photo
                   </label>
-                  <label className="inline-flex items-center gap-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white cursor-pointer transition-colors">
+                  <label className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors ${uploadingAvatar ? 'bg-neutral-700 cursor-wait' : 'bg-neutral-800 hover:bg-neutral-700 cursor-pointer'}`}>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleProfileUpload}
                       className="sr-only"
+                      disabled={uploadingAvatar}
                     />
-                    Upload profile
+                    {uploadingAvatar ? 'Uploading…' : 'Upload profile'}
                   </label>
                 </div>
                 <div className="px-4 pt-2">
