@@ -102,23 +102,23 @@ export default function LandingPage() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-4 sm:pt-6 mt-2 sm:mt-4 w-full max-w-4xl"
         >
-          <div className="text-center min-w-[4rem]">
-            <p className="text-2xl sm:text-3xl font-bold text-white">200ms</p>
-            <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
+          <div className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]">
+            <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">200ms</p>
+            <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               Consensus Speed
             </p>
           </div>
           <div className="hidden sm:block w-px h-12 bg-neutral-800" />
-          <div className="text-center min-w-[4rem]">
-            <p className="text-2xl sm:text-3xl font-bold text-white">ERC-20</p>
-            <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
+          <div className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]">
+            <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">ERC-20</p>
+            <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               EVM Compatible
             </p>
           </div>
           <div className="hidden sm:block w-px h-12 bg-neutral-800" />
-          <div className="text-center min-w-[4rem]">
-            <p className="text-2xl sm:text-3xl font-bold text-white">100%</p>
-            <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
+          <div className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]">
+            <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">100%</p>
+            <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               On-Chain Oracle
             </p>
           </div>
