@@ -16,7 +16,7 @@ export default function Providers({ children, appId }: ProvidersProps) {
             Auth not configured
           </h1>
           <p className="text-sm text-neutral-400">
-            Set <code className="rounded bg-neutral-800 px-1 py-0.5 text-xs">NEXT_PUBLIC_PRIVY_APP_ID</code> in your Vercel project (Settings → Environment Variables) for Production and Preview, then redeploy.
+            In Vercel: Settings → Environment Variables → add <code className="rounded bg-neutral-800 px-1 py-0.5 text-xs">NEXT_PUBLIC_PRIVY_APP_ID</code> with your Privy App ID. Enable Production and Preview, save, then start a new deployment (Redeploy or push a commit). The value is applied only on a new build.
           </p>
         </div>
       </div>
