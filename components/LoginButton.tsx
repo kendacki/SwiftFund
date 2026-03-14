@@ -32,6 +32,11 @@ export default function LoginButton() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const formatAddressForDisplay = (addr: string | undefined) => {
+    if (!addr || addr.length < 11) return addr ?? '—';
+    return `${addr.slice(0, 6)}xxxx${addr.slice(-4)}`;
+  };
+
   const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -98,8 +103,8 @@ export default function LoginButton() {
                   <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">
                     Wallet address
                   </p>
-                  <p className="font-mono text-xs text-neutral-300 break-all">
-                    {user?.wallet?.address ?? '—'}
+                  <p className="font-mono text-xs text-neutral-300">
+                    {formatAddressForDisplay(user?.wallet?.address)}
                   </p>
                   <button
                     type="button"
