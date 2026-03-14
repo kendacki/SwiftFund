@@ -1,13 +1,45 @@
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 
 export default function LoginButton() {
   const { login, logout, authenticated, user, ready } = usePrivy();
   const router = useRouter();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
-  // If Privy is still initializing, show a ghost/loading state
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    if (profileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [profileOpen]);
+
+  const copyAddress = () => {
+    const addr = user?.wallet?.address;
+    if (!addr) return;
+    navigator.clipboard.writeText(addr);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (profileImageUrl) URL.revokeObjectURL(profileImageUrl);
+    setProfileImageUrl(url);
+  };
+
   if (!ready) {
     return (
       <div className="h-10 w-32 bg-neutral-900 animate-pulse rounded-lg border border-neutral-800" />
@@ -15,7 +47,7 @@ export default function LoginButton() {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4" ref={popupRef}>
       {authenticated ? (
         <>
           <button
@@ -31,17 +63,83 @@ export default function LoginButton() {
             Dashboard
           </button>
 
-          {/* User Wallet / Logout Button */}
-          <button
-            onClick={logout}
-            className="font-heading bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-2 rounded-lg border border-neutral-800 transition-all text-sm flex items-center gap-2"
-          >
-            <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-            {user?.wallet?.address?.substring(0, 6)}...{user?.wallet?.address?.slice(-4)}
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setProfileOpen((o) => !o)}
+              className="flex items-center justify-center rounded-full border-2 border-neutral-700 hover:border-red-500/50 transition-colors overflow-hidden bg-neutral-800 h-9 w-9 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-950"
+              aria-expanded={profileOpen}
+              aria-haspopup="true"
+              aria-label="Profile menu"
+            >
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <svg
+                  className="h-5 w-5 text-neutral-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              )}
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 w-72 rounded-xl border border-neutral-800 bg-neutral-900 shadow-xl py-3 z-50">
+                <div className="px-4 pb-3 border-b border-neutral-800">
+                  <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">
+                    Wallet address
+                  </p>
+                  <p className="font-mono text-xs text-neutral-300 break-all">
+                    {user?.wallet?.address ?? '—'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyAddress}
+                    className="mt-2 text-xs font-medium text-red-400 hover:text-red-300"
+                  >
+                    {copied ? 'Copied' : 'Copy address'}
+                  </button>
+                </div>
+                <div className="px-4 py-3 border-b border-neutral-800">
+                  <label className="block text-xs text-neutral-500 uppercase tracking-wider mb-2">
+                    Profile photo
+                  </label>
+                  <label className="inline-flex items-center gap-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white cursor-pointer transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfileUpload}
+                      className="sr-only"
+                    />
+                    Upload profile
+                  </label>
+                </div>
+                <div className="px-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      logout();
+                    }}
+                    className="text-xs font-medium text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       ) : (
-        /* The Main Login Trigger */
         <button
           onClick={login}
           className="font-heading bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all transform hover:scale-105 active:scale-95"

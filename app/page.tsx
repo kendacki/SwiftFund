@@ -2,44 +2,29 @@
 
 export const dynamic = 'force-dynamic';
 
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import LoginButton from '../components/LoginButton';
+import { useRouter } from 'next/navigation';
+import { usePrivy } from '@privy-io/react-auth';
 
 export default function LandingPage() {
+  const { authenticated, ready } = usePrivy();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (ready && authenticated) {
+      router.replace('/portfolio');
+    }
+  }, [ready, authenticated, router]);
+
+  if (ready && authenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-red-500/30 overflow-x-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
-
-      <nav className="relative z-10 flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-b border-neutral-800/50">
-        <div className="flex items-center gap-2 min-w-0">
-          <a
-            href="https://www.freelogovectors.net/swift-logo-2/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center"
-          >
-            <img
-              src="https://www.freelogovectors.net/wp-content/uploads/2019/10/swift-logo-program.png"
-              alt="Swift logo"
-              className="h-6 w-auto"
-              fetchPriority="high"
-              width={24}
-              height={24}
-            />
-          </a>
-          <span className="text-lg sm:text-xl font-extrabold tracking-tight truncate">SwiftFund</span>
-        </div>
-        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
-          <Link
-            href="/discover"
-            className="text-xs sm:text-sm font-medium text-neutral-400 hover:text-white transition-colors"
-          >
-            Discover
-          </Link>
-          <LoginButton />
-        </div>
-      </nav>
 
       <main className="relative z-10 flex flex-col items-center justify-center pt-4 sm:pt-6 md:pt-10 pb-16 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
         <motion.div

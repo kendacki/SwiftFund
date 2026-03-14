@@ -1,5 +1,6 @@
 import './globals.css';
 import Providers from './providers';
+import AppNav from '@/components/AppNav';
 import { Roboto } from 'next/font/google';
 
 const roboto = Roboto({
@@ -41,6 +42,7 @@ export default function RootLayout({
     <html lang="en" className={roboto.variable}>
       <body className="bg-neutral-950 text-white font-[verdana] antialiased">
         <Providers appId={appId}>
+          <AppNav />
           {children}
         </Providers>
       </body>
