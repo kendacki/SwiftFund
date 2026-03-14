@@ -63,7 +63,7 @@ export default function LandingPage() {
         >
           Fund Your Next Project{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800 sm:whitespace-nowrap">
-            with your Community.
+            With Your Community.
           </span>
         </motion.h1>
 
@@ -71,7 +71,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-neutral-400 mb-6 sm:mb-8 max-w-2xl leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-neutral-400 mb-6 sm:mb-8 w-full max-w-4xl leading-relaxed"
         >
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
