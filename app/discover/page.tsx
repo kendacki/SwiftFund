@@ -4,11 +4,11 @@ export const dynamic = 'force-dynamic';
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { usePrivy } from '@privy-io/react-auth';
 import ProjectCard, {
   ProjectCardProps,
   ProjectCardStats,
 } from '@/components/ProjectCard';
-import { fundProject } from '@/lib/hedera';
 
 type FilterKey = 'all' | 'trending' | 'endingSoon';
 
@@ -65,6 +65,7 @@ const PROJECTS: Project[] = [
 ];
 
 export default function DiscoverPage() {
+  const { getAccessToken, authenticated } = usePrivy();
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null
@@ -105,13 +106,32 @@ export default function DiscoverPage() {
       setStatus('Enter a valid amount to fund.');
       return;
     }
+    if (!authenticated) {
+      setStatus('Please log in with Initialize Wallet to fund a project.');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
       setStatus('Submitting funding transaction on Hedera...');
-      const result = await fundProject(selectedProject.id, numericAmount);
+      const token = await getAccessToken();
+      const response = await fetch('/api/fund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectId: selectedProject.id,
+          amount: numericAmount,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Funding failed');
+      }
       setStatus(
-        `Funding submitted. Status: ${result.status}, Tx: ${result.transactionId}`
+        `Funding submitted. Status: ${data.status}, Tx: ${data.transactionId}`
       );
     } catch (error) {
       const message =
