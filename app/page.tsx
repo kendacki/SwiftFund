@@ -3,16 +3,14 @@
 export const dynamic = 'force-dynamic';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import LoginButton from '../components/LoginButton';
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-red-500/30">
-      
-      {/* Subtle Grid Background for technical aesthetic */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
 
-      {/* Navigation */}
       <nav className="relative z-10 flex justify-between items-center max-w-7xl mx-auto px-6 py-6 border-b border-neutral-800/50">
         <div className="flex items-center gap-2">
           <a
@@ -25,16 +23,25 @@ export default function LandingPage() {
               src="https://www.freelogovectors.net/wp-content/uploads/2019/10/swift-logo-program.png"
               alt="Swift logo"
               className="h-6 w-auto"
+              fetchPriority="high"
+              width={24}
+              height={24}
             />
           </a>
           <span className="text-xl font-extrabold tracking-tight">SwiftFund</span>
         </div>
-        <LoginButton />
+        <div className="flex items-center gap-6">
+          <Link
+            href="/discover"
+            className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
+          >
+            Discover
+          </Link>
+          <LoginButton />
+        </div>
       </nav>
 
-      {/* Hero Section */}
       <main className="relative z-10 flex flex-col items-center justify-center pt-32 pb-20 px-6 max-w-4xl mx-auto text-center">
-        
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -42,13 +49,13 @@ export default function LandingPage() {
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-400 mb-8"
         >
           <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
           </span>
           Powered by Hedera
         </motion.div>
 
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -60,7 +67,7 @@ export default function LandingPage() {
           </span>
         </motion.h1>
 
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -69,8 +76,7 @@ export default function LandingPage() {
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
 
-        {/* Trust Markers */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
@@ -78,20 +84,25 @@ export default function LandingPage() {
         >
           <div className="text-center">
             <p className="text-3xl font-bold text-white">200ms</p>
-            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">Consensus Speed</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">
+              Consensus Speed
+            </p>
           </div>
-          <div className="w-px h-12 bg-neutral-800"></div>
+          <div className="w-px h-12 bg-neutral-800" />
           <div className="text-center">
             <p className="text-3xl font-bold text-white">ERC-20</p>
-            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">EVM Compatible</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">
+              EVM Compatible
+            </p>
           </div>
-          <div className="w-px h-12 bg-neutral-800"></div>
+          <div className="w-px h-12 bg-neutral-800" />
           <div className="text-center">
             <p className="text-3xl font-bold text-white">100%</p>
-            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">On-Chain Oracle</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">
+              On-Chain Oracle
+            </p>
           </div>
         </motion.div>
-
       </main>
     </div>
   );
