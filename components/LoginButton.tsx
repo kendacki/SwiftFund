@@ -46,7 +46,7 @@ export default function LoginButton() {
           onClick={login}
           className="font-heading bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all transform hover:scale-105 active:scale-95"
         >
-          Initialize Wallet
+          Login
         </button>
       )}
     </div>

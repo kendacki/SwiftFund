@@ -108,7 +108,7 @@ export default function DiscoverPage() {
       return;
     }
     if (!authenticated) {
-      setStatus('Please log in with Initialize Wallet to fund a project.');
+      setStatus('Please log in to fund a project.');
       return;
     }
 
