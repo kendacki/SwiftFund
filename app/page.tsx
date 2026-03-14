@@ -41,12 +41,12 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      <main className="relative z-10 flex flex-col items-center justify-center pt-8 sm:pt-12 md:pt-16 pb-16 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
+      <main className="relative z-10 flex flex-col items-center justify-center pt-4 sm:pt-6 md:pt-10 pb-16 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-400 mb-5 sm:mb-6"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-400 mb-3 sm:mb-4"
         >
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -63,7 +63,7 @@ export default function LandingPage() {
             delay: 0.12,
             ease: [0.22, 0.61, 0.36, 1],
           }}
-          className="font-heading text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4 sm:mb-6 leading-[1.1]"
+          className="font-heading text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-3 sm:mb-4 leading-[1.1]"
         >
           <motion.span
             initial={{ opacity: 0, y: 20 }}
@@ -91,7 +91,7 @@ export default function LandingPage() {
             delay: 0.5,
             ease: [0.22, 0.61, 0.36, 1],
           }}
-          className="text-base sm:text-lg md:text-xl text-neutral-400 mb-6 sm:mb-8 w-full max-w-4xl leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-neutral-400 mb-4 sm:mb-6 w-full max-w-4xl leading-relaxed"
         >
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
@@ -100,7 +100,7 @@ export default function LandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-6 sm:pt-8 mt-4 sm:mt-6 w-full"
+          className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-4 sm:pt-6 mt-2 sm:mt-4 w-full max-w-4xl"
         >
           <div className="text-center min-w-[4rem]">
             <p className="text-2xl sm:text-3xl font-bold text-white">200ms</p>
