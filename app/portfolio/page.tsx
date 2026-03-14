@@ -100,8 +100,19 @@ export default function PortfolioPage() {
                 className="w-full px-4 sm:px-6 py-4 flex items-center justify-between gap-3 text-left hover:bg-neutral-800/40 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-bold text-red-500">
-                    S
+                  <div className="flex items-center -space-x-2">
+                    <img
+                      src="/logos/hedera.png"
+                      alt=""
+                      className="h-6 w-6 rounded-full border-2 border-neutral-900 object-cover shrink-0"
+                      aria-hidden
+                    />
+                    <img
+                      src="/logos/swind.png"
+                      alt=""
+                      className="h-6 w-6 rounded-full border-2 border-neutral-900 object-cover shrink-0"
+                      aria-hidden
+                    />
                   </div>
                   <span className="font-heading text-sm font-medium text-neutral-300">
                     Breakdown
