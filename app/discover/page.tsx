@@ -154,9 +154,9 @@ export default function DiscoverPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Link
-            href="/"
+            href={authenticated ? '/creator' : '/'}
             className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors"
-            aria-label="Back to homepage"
+            aria-label={authenticated ? 'Back to dashboard' : 'Back to homepage'}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
