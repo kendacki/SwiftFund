@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/database.types';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -12,5 +13,5 @@ export function getSupabase() {
   if (!url || !serviceRoleKey) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.');
   }
-  return createClient(url, serviceRoleKey, { auth: { persistSession: false } });
+  return createClient<Database>(url, serviceRoleKey, { auth: { persistSession: false } });
 }
