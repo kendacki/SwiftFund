@@ -8,6 +8,9 @@ import { usePrivy, useWallets } from '@privy-io/react-auth';
 // Fixed SWIND token ID on Hedera testnet.
 const SWIND_TOKEN_ID = '0.0.8216024';
 
+/** Mock USD price for SWIND (testnet token; no market). */
+const SWIND_MOCK_PRICE = 0.05;
+
 // Logos in public/logos/
 const TOKENS = [
   { symbol: 'HBAR', name: 'Hedera', logo: '/logos/hedera.png' },
@@ -39,8 +42,12 @@ export default function PortfolioPage() {
   // Dashboard state
   const [hbarBalance, setHbarBalance] = useState<number>(0);
   const [swindBalance, setSwindBalance] = useState<number>(0);
+  const [hbarUsdPrice, setHbarUsdPrice] = useState<number>(0);
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const totalUsdBalance =
+    hbarBalance * hbarUsdPrice + swindBalance * SWIND_MOCK_PRICE;
 
   // Resolve the active wallet address from Privy.
   useEffect(() => {
@@ -64,6 +71,29 @@ export default function PortfolioPage() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
+
+        // 0) Fetch live HBAR/USD exchange rate (current_rate.cent_equivalent / hbar_equivalent / 100 = USD per HBAR).
+        try {
+          const rateRes = await fetch(
+            'https://testnet.mirrornode.hedera.com/api/v1/network/exchangerate'
+          );
+          if (rateRes.ok) {
+            const rateJson = await rateRes.json();
+            const current = rateJson?.current_rate;
+            const cent = current?.cent_equivalent;
+            const hbarEq = current?.hbar_equivalent;
+            if (
+              typeof cent === 'number' &&
+              typeof hbarEq === 'number' &&
+              hbarEq > 0
+            ) {
+              const usdPerHbar = cent / hbarEq / 100;
+              if (!cancelled) setHbarUsdPrice(usdPerHbar);
+            }
+          }
+        } catch {
+          // Keep previous hbarUsdPrice on failure
+        }
 
         // 1) Resolve Hedera account ID from the wallet address (EVM or account form).
         const accountRes = await fetch(
@@ -241,9 +271,16 @@ export default function PortfolioPage() {
               <div className="px-4 sm:px-6 py-5 flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                    $0.00
+                    {Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }).format(totalUsdBalance)}
                   </p>
-                  <p className="font-heading text-sm text-neutral-500 mt-1 tracking-tight">Total balance</p>
+                  <p className="font-heading text-sm text-neutral-500 mt-1 tracking-tight">
+                    Total balance
+                  </p>
                 </div>
                 <button
                   type="button"
