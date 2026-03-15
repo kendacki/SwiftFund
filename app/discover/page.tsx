@@ -136,9 +136,8 @@ export default function DiscoverPage() {
     }
 
     if (activeFilter === 'completed') {
-      // Only fully funded projects.
-      const list = allProjects.filter((p) => p.progressPercent >= 100);
-      return list.length > 0 ? list : allProjects;
+      // Only fully funded projects; if none exist yet, show an empty state.
+      return allProjects.filter((p) => p.progressPercent >= 100);
     }
 
     return allProjects;
