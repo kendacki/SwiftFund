@@ -250,7 +250,7 @@ export default function CreatorDashboard() {
             >
               <span aria-hidden>←</span> Home
             </Link>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-5">
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-5 tracking-tight">
               Creator Dashboard
             </h1>
           </div>
@@ -265,7 +265,7 @@ export default function CreatorDashboard() {
         {/* My Projects */}
         <section className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-neutral-800">
-            <h2 className="font-heading text-lg font-semibold text-white">
+            <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
               My Projects
             </h2>
             <button
@@ -283,7 +283,7 @@ export default function CreatorDashboard() {
                 Loading projects…
               </div>
             ) : projects.length === 0 ? (
-              <p className="text-sm text-neutral-500 py-8 text-center">
+              <p className="font-heading text-sm text-neutral-500 py-8 text-center tracking-tight">
                 No projects yet. Create one to submit for approval and list on Discover.
               </p>
             ) : (
@@ -356,10 +356,10 @@ export default function CreatorDashboard() {
         {/* Reward Distribution */}
         <section className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-neutral-800">
-            <h2 className="font-heading text-lg font-semibold text-white">
+            <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
               Reward Distribution
             </h2>
-            <p className="text-sm text-neutral-400 mt-1 max-w-xl">
+            <p className="font-heading text-sm text-neutral-400 mt-1 max-w-xl tracking-tight">
               Trigger distribution of on-chain yield to your supporters. This calls the SwiftFund treasury contract on Hedera.
             </p>
           </div>
@@ -424,7 +424,7 @@ export default function CreatorDashboard() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 flex justify-between items-center px-4 sm:px-6 py-4 border-b border-neutral-800 bg-neutral-950 z-10">
-              <h2 id="create-project-title" className="font-heading text-lg font-semibold text-white">
+              <h2 id="create-project-title" className="font-heading text-lg font-semibold text-white tracking-tight">
                 Create project
               </h2>
               <button
@@ -439,7 +439,7 @@ export default function CreatorDashboard() {
               </button>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
-              <p className="text-xs text-neutral-400">
+              <p className="font-heading text-xs text-neutral-400 tracking-tight">
                 Fill in the details below. Save as draft or submit for approval. Once approved, the project will appear on Discover. Upload an image before submitting for approval.
               </p>
               <div>

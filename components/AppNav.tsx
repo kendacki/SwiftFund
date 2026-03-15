@@ -74,7 +74,7 @@ export default function AppNav() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
-                    className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
+                    className={`font-heading block px-4 py-2.5 text-sm font-medium transition-colors ${
                       pathname === link.href
                         ? 'text-red-400 bg-red-500/10'
                         : 'text-neutral-300 hover:text-white hover:bg-neutral-800/80'
@@ -95,7 +95,7 @@ export default function AppNav() {
             width={24}
             height={24}
           />
-          <span className="text-lg sm:text-xl font-extrabold tracking-tight truncate text-white">
+          <span className="font-heading text-lg sm:text-xl font-extrabold tracking-tight truncate text-white">
             SwiftFund
           </span>
         </Link>

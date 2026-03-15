@@ -70,7 +70,7 @@ export default function PortfolioPage() {
 
         {!address ? (
           <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-6 text-center">
-            <p className="text-neutral-400">Connect your wallet to view your portfolio.</p>
+            <p className="font-heading text-neutral-400 tracking-tight">Connect your wallet to view your portfolio.</p>
           </div>
         ) : (
           <>
@@ -78,10 +78,10 @@ export default function PortfolioPage() {
             <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
               <div className="px-4 sm:px-6 py-5 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="font-heading text-3xl sm:text-4xl font-bold text-white">
+                  <p className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-tight">
                     $0.00
                   </p>
-                  <p className="text-sm text-neutral-500 mt-1">Total balance</p>
+                  <p className="font-heading text-sm text-neutral-500 mt-1 tracking-tight">Total balance</p>
                 </div>
                 <button
                   type="button"
@@ -115,7 +115,7 @@ export default function PortfolioPage() {
                       aria-hidden
                     />
                   </div>
-                  <span className="font-heading text-sm font-medium text-neutral-300">
+                  <span className="font-heading text-sm font-medium text-neutral-300 tracking-tight">
                     Breakdown
                   </span>
                 </div>
@@ -147,13 +147,13 @@ export default function PortfolioPage() {
                           <span className="sr-only">{token.name} logo</span>
                         </div>
                         <div className="min-w-0">
-                          <p className="font-heading text-sm font-medium text-white">{token.symbol}</p>
-                          <p className="text-xs text-neutral-500">{token.name}</p>
+                          <p className="font-heading text-sm font-medium text-white tracking-tight">{token.symbol}</p>
+                              <p className="font-heading text-xs text-neutral-500 tracking-tight">{token.name}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-heading text-sm font-semibold text-white">{token.amount}</p>
-                        <p className="text-xs text-neutral-500">{token.equivalent}</p>
+                        <p className="font-heading text-sm font-semibold text-white tracking-tight">{token.amount}</p>
+                            <p className="font-heading text-xs text-neutral-500 tracking-tight">{token.equivalent}</p>
                       </div>
                     </div>
                   ))}
@@ -283,7 +283,7 @@ export default function PortfolioPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 id="add-funds-title" className="font-heading text-lg font-semibold text-white">
+              <h2 id="add-funds-title" className="font-heading text-lg font-semibold text-white tracking-tight">
                 Add funds
               </h2>
               <button
@@ -307,7 +307,7 @@ export default function PortfolioPage() {
                   className="w-[200px] h-[200px]"
                 />
               </div>
-              <p className="text-xs text-neutral-500 mb-2 w-full text-center">Wallet address</p>
+              <p className="font-heading text-xs text-neutral-500 mb-2 w-full text-center tracking-tight">Wallet address</p>
               <code className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono break-all text-center mb-3">
                 {address}
               </code>

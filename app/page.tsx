@@ -76,7 +76,7 @@ export default function LandingPage() {
             delay: 0.5,
             ease: [0.22, 0.61, 0.36, 1],
           }}
-          className="text-base sm:text-lg md:text-xl text-neutral-400 mb-4 sm:mb-6 w-full max-w-4xl leading-relaxed"
+          className="font-heading text-base sm:text-lg md:text-xl text-neutral-400 mb-4 sm:mb-6 w-full max-w-4xl leading-relaxed tracking-tight"
         >
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>

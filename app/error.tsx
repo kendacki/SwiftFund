@@ -29,10 +29,10 @@ export default function GlobalError({
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="max-w-md text-center space-y-4">
-        <h1 className="font-heading text-3xl font-black tracking-tight">
+        <h1 className="font-heading text-3xl font-black tracking-tight text-white">
           {showConsensus ? 'Consensus Error' : 'Something went wrong.'}
         </h1>
-        <p className="text-sm text-neutral-400">
+        <p className="font-heading text-sm text-neutral-400 tracking-tight">
           {showConsensus
             ? 'A contract or network call failed. Check your connection and try again.'
             : 'An unexpected error occurred while loading SwiftFund. Please try again.'}

@@ -292,7 +292,7 @@ export default function LoginButton() {
             {profileOpen && (
               <div className="absolute right-0 mt-2 w-72 rounded-xl border border-neutral-800 bg-neutral-900 shadow-xl py-3 z-50">
                 <div className="px-4 pb-3 border-b border-neutral-800">
-                  <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">
+                  <p className="font-heading text-xs text-neutral-500 uppercase tracking-wider mb-1">
                     Wallet address
                   </p>
                   <p className="font-mono text-xs text-neutral-300">
@@ -307,7 +307,7 @@ export default function LoginButton() {
                   </button>
                 </div>
                 <div className="px-4 py-3 border-b border-neutral-800">
-                  <label className="block text-xs text-neutral-500 uppercase tracking-wider mb-2">
+                  <label className="font-heading block text-xs text-neutral-500 uppercase tracking-wider mb-2">
                     Profile photo
                   </label>
                   <label className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors ${uploadingAvatar ? 'bg-neutral-700 cursor-wait' : 'bg-neutral-800 hover:bg-neutral-700 cursor-pointer'}`}>

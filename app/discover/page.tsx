@@ -217,7 +217,7 @@ export default function DiscoverPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 0.61, 0.36, 1] }}
-            className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight"
+            className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white"
           >
             Support Your Favorite Creators
           </motion.h1>
@@ -225,7 +225,7 @@ export default function DiscoverPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
-            className="text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0"
+            className="font-heading text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0 tracking-tight"
           >
             Directly fund upcoming projects and earn a share of future revenue.
           </motion.p>
@@ -279,10 +279,10 @@ export default function DiscoverPage() {
           <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-4 sm:p-5 shadow-lg">
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h2 className="font-heading text-lg font-semibold text-white">
+                <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
                   Fund {selectedProject.creatorName}
                 </h2>
-                <p className="text-xs text-neutral-400">
+                <p className="font-heading text-xs text-neutral-400 tracking-tight">
                   Enter the amount you want to contribute to this project.
                 </p>
               </div>

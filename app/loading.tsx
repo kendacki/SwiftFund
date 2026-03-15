@@ -9,7 +9,7 @@ export default function Loading() {
           width={48}
           height={48}
         />
-        <p className="text-sm text-neutral-400">Connecting to Hedera...</p>
+        <p className="font-heading text-sm text-neutral-400 tracking-tight">Connecting to Hedera...</p>
       </div>
     </div>
   );

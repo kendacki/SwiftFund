@@ -39,17 +39,17 @@ export default function ProjectCard({
           />
         </div>
         <div className="min-w-0">
-          <p className="font-heading text-sm font-semibold text-white truncate">
+          <p className="font-heading text-sm font-semibold text-white truncate tracking-tight">
             {creatorName}
           </p>
-          <p className="text-xs text-neutral-400 truncate">{handle}</p>
+          <p className="font-heading text-xs text-neutral-400 truncate tracking-tight">{handle}</p>
         </div>
       </div>
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-neutral-400">Funding progress</span>
-          <span className="text-xs font-heading text-neutral-200">
+          <span className="font-heading text-xs text-neutral-400 tracking-tight">Funding progress</span>
+          <span className="font-heading text-xs text-neutral-200 tracking-tight">
             {safeProgress.toFixed(0)}%
           </span>
         </div>
@@ -63,26 +63,26 @@ export default function ProjectCard({
 
       <div className="mt-3 mb-4 grid grid-cols-3 gap-2 sm:gap-3 text-xs min-w-0">
         <div>
-          <p className="text-neutral-500 mb-1">Amount Raised</p>
-          <p className="font-heading text-sm text-white">
+          <p className="font-heading text-neutral-500 mb-1 text-xs tracking-tight">Amount Raised</p>
+          <p className="font-heading text-sm text-white tracking-tight">
             {stats.amountRaisedLabel}
           </p>
-          <p className="text-[11px] text-neutral-500">Goal {stats.goalLabel}</p>
+          <p className="font-heading text-[11px] text-neutral-500 tracking-tight">Goal {stats.goalLabel}</p>
         </div>
         <div>
-          <p className="text-neutral-500 mb-1">Backers</p>
-          <p className="font-heading text-sm text-white">
+          <p className="font-heading text-neutral-500 mb-1 text-xs tracking-tight">Backers</p>
+          <p className="font-heading text-sm text-white tracking-tight">
             {stats.backersLabel}
           </p>
         </div>
         <div>
-          <p className="text-neutral-500 mb-1 flex items-center gap-1">
+          <p className="font-heading text-neutral-500 mb-1 text-xs tracking-tight flex items-center gap-1">
             <span className="inline-flex h-3 w-3 items-center justify-center">
               <span className="inline-block h-3 w-3 rounded-full border border-red-500 border-t-transparent animate-spin" />
             </span>
             Time Left
           </p>
-          <p className="font-heading text-sm text-white">
+          <p className="font-heading text-sm text-white tracking-tight">
             {stats.timeLeftLabel}
           </p>
         </div>

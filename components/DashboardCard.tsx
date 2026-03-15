@@ -17,12 +17,12 @@ export default function DashboardCard({
     <div
       className={`rounded-lg border border-neutral-800 bg-neutral-900/50 p-5 ${className}`}
     >
-      <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
+      <p className="font-heading text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
         {title}
       </p>
-      <div className="text-xl font-bold text-white">{value}</div>
+      <div className="font-heading text-xl font-bold text-white tracking-tight">{value}</div>
       {subtitle && (
-        <p className="mt-1 text-xs text-neutral-400">{subtitle}</p>
+        <p className="font-heading mt-1 text-xs text-neutral-400 tracking-tight">{subtitle}</p>
       )}
     </div>
   );
