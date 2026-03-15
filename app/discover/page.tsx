@@ -5,10 +5,13 @@ export const dynamic = 'force-dynamic';
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { usePrivy } from '@privy-io/react-auth';
+import { ethers } from 'ethers';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import ProjectCard from '@/components/ProjectCard';
 import type { ProjectCardProps } from '@/components/ProjectCard';
 import type { Project } from '@/lib/projects';
+import { Button } from '@/components/Button';
+import { associateToken, fundCreator, CONTRACT_ADDRESS } from '@/lib/fundCreator';
 
 type FilterKey = 'all' | 'trending' | 'endingSoon' | 'completed';
 
@@ -87,7 +90,8 @@ interface DiscoverProject extends ProjectCardData {
 }
 
 export default function DiscoverPage() {
-  const { getAccessToken, authenticated } = usePrivy();
+  const { authenticated } = usePrivy();
+  const { wallets } = useWallets();
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [apiProjects, setApiProjects] = useState<DiscoverProject[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -162,9 +166,9 @@ export default function DiscoverPage() {
 
   const handleFund = async () => {
     if (!selectedProject) return;
-    const numericAmount = Number(amount);
-    if (!numericAmount || numericAmount <= 0) {
-      setStatus('Enter a valid amount to fund.');
+    const amountTrimmed = amount.trim();
+    if (!amountTrimmed || Number(amountTrimmed) <= 0) {
+      setStatus('Enter a valid amount (HBAR) to fund.');
       return;
     }
     if (!authenticated) {
@@ -172,28 +176,41 @@ export default function DiscoverPage() {
       return;
     }
 
+    const wallet = wallets[0];
+    if (!wallet?.getEthereumProvider) {
+      setStatus('Wallet not ready. Please connect your wallet and try again.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      setStatus('Submitting funding transaction on Hedera...');
-      const token = await getAccessToken();
-      const response = await fetch('/api/fund', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          projectId: selectedProject.id,
-          amount: numericAmount,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Funding failed');
+
+      setStatus('Step 1/2: Associating SWIND token with your wallet. Approve in your wallet.');
+      const provider = await wallet.getEthereumProvider();
+      const ethersProvider = new ethers.BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
+
+      try {
+        await associateToken(signer);
+      } catch (assocErr) {
+        const msg = assocErr instanceof Error ? assocErr.message : 'Token association failed.';
+        if (msg.includes('TOKEN_ALREADY_ASSOCIATED') || msg.includes('already associated')) {
+          // Already associated; continue to funding.
+        } else {
+          setStatus(`Association required: ${msg}. Please try again.`);
+          return;
+        }
       }
-      setStatus(
-        `Funding submitted. Status: ${data.status}, Tx: ${data.transactionId}`
-      );
+
+      setStatus('Step 2/2: Confirm funding in your wallet.');
+      const creatorAddress = (selectedProject as { creatorEvmAddress?: string }).creatorEvmAddress ?? CONTRACT_ADDRESS;
+      const { hash } = await fundCreator(signer, creatorAddress, amountTrimmed);
+
+      setStatus(`Funding successful! Transaction: ${hash.slice(0, 10)}…${hash.slice(-8)}`);
+      setAmount('');
+      setTimeout(() => {
+        closeModal();
+      }, 2500);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Funding transaction failed.';
@@ -320,7 +337,7 @@ export default function DiscoverPage() {
 
             <div className="space-y-3 mb-4">
               <label className="block text-xs text-neutral-400">
-                Funding amount (USD)
+                Amount (HBAR)
               </label>
               <input
                 type="number"
@@ -329,18 +346,23 @@ export default function DiscoverPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-white outline-none focus:border-red-600"
-                placeholder="e.g. 250"
+                placeholder="e.g. 1.5"
               />
+              <p className="text-xs text-neutral-500">
+                Step 1: Associate SWIND with your wallet. Step 2: Send HBAR to the creator via the treasury.
+              </p>
             </div>
 
             {status && (
               <p
                 className={`mb-3 text-sm whitespace-pre-wrap rounded-lg p-2 ${
-                  status.startsWith('Funding submitted') || status.startsWith('Submitting')
-                    ? 'text-neutral-300 bg-neutral-800/80'
-                    : status.startsWith('Enter a valid') || status.startsWith('Please log in') || status.includes('failed') || status.includes('revert')
-                      ? 'text-red-300 bg-red-500/10 border border-red-500/20'
-                      : 'text-neutral-400 bg-neutral-800/60'
+                  status.startsWith('Funding successful')
+                    ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20'
+                    : status.startsWith('Step ') || status.startsWith('Funding submitted') || status.startsWith('Submitting')
+                      ? 'text-neutral-300 bg-neutral-800/80'
+                      : status.startsWith('Enter a valid') || status.startsWith('Please log in') || status.startsWith('Association required') || status.includes('failed') || status.includes('revert')
+                        ? 'text-red-300 bg-red-500/10 border border-red-500/20'
+                        : 'text-neutral-400 bg-neutral-800/60'
                 }`}
               >
                 {status}
@@ -349,18 +371,20 @@ export default function DiscoverPage() {
 
             <div className="flex gap-2 justify-end">
               <button
+                type="button"
                 onClick={closeModal}
                 className="inline-flex items-center justify-center rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-900"
               >
                 Cancel
               </button>
-              <button
+              <Button
+                type="button"
                 onClick={handleFund}
                 disabled={isSubmitting}
-                className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60"
+                className="px-4 py-1.5 text-xs"
               >
                 {isSubmitting ? 'Funding...' : 'Confirm Funding'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

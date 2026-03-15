@@ -17,6 +17,7 @@ contract SwiftFundTreasury {
     error InsufficientBalance();
     error ZeroFans();
     error ZeroAmountPerFan();
+    error ZeroAddress();
     error TransferFailed();
 
     modifier onlyOwner() {
@@ -56,5 +57,15 @@ contract SwiftFundTreasury {
     /// @notice Returns the contract's balance (available for distribution).
     function treasuryBalance() external view returns (uint256) {
         return address(this).balance;
+    }
+
+    event CreatorFunded(address indexed funder, address indexed creator, uint256 amount);
+
+    /// @notice Fund a creator: send HBAR to the treasury and record the creator for attribution.
+    /// @param creator Creator's EVM address (for attribution / future payouts).
+    function fundCreator(address creator) external payable {
+        if (msg.value == 0) return;
+        if (creator == address(0)) revert ZeroAddress();
+        emit CreatorFunded(msg.sender, creator, msg.value);
     }
 }

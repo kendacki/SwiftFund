@@ -23,13 +23,14 @@ export default defineConfig({
       type: "http",
       url: process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api",
       chainId: 296,
-      // NOTE: Hedera JSON-RPC (Hashio) deployment requires an ECDSA (secp256k1) private key.
-      // ED25519 DER keys (HEDERA_TESTNET_PRIVATE_KEY) won't work with ethers/Hardhat JSON-RPC.
+      // Hedera JSON-RPC (Hashio) requires ECDSA (secp256k1) private key in 0x... hex format.
       accounts: process.env.HEDERA_ECDSA_PRIVATE_KEY
         ? [process.env.HEDERA_ECDSA_PRIVATE_KEY]
         : process.env.HEDERA_PRIVATE_KEY
           ? [process.env.HEDERA_PRIVATE_KEY]
-          : [],
+          : process.env.HEDERA_TESTNET_PRIVATE_KEY
+            ? [process.env.HEDERA_TESTNET_PRIVATE_KEY]
+            : [],
     },
   },
   paths: {
