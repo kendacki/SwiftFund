@@ -61,7 +61,6 @@ export async function POST(req: Request) {
       access: 'public',
       contentType: file.type || 'image/jpeg',
       addRandomSuffix: false,
-      allowOverwrite: true,
     });
     return NextResponse.json({ url: blob.url });
   } catch (error: unknown) {

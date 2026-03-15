@@ -41,7 +41,6 @@ async function saveProjects(projects: Project[]): Promise<void> {
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
-    allowOverwrite: true,
   });
 }
 
@@ -112,7 +111,6 @@ export async function POST(req: Request) {
         access: 'public',
         contentType: imageFile.type || 'image/jpeg',
         addRandomSuffix: false,
-        allowOverwrite: true,
       });
       imageUrl = blob.url;
     }
