@@ -17,6 +17,7 @@ type Row = {
   tags: string[] | null;
   earnings_distribution_percent: number | null;
   account_info_pdf_url: string | null;
+  funder_count?: number;
 };
 
 function rowToProject(r: Row): Project {
@@ -36,6 +37,7 @@ function rowToProject(r: Row): Project {
     tags: (r.tags ?? ['all']) as Project['tags'],
     earningsDistributionPercent: r.earnings_distribution_percent ?? undefined,
     accountInfoPdfUrl: r.account_info_pdf_url ?? undefined,
+    funderCount: r.funder_count ?? 0,
   };
 }
 

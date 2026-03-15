@@ -28,10 +28,11 @@ const MOCK_PROJECTS: ProjectCardData[] = [
     stats: {
       amountRaisedLabel: '$45,000',
       goalLabel: '$100,000',
-      backersLabel: '1,240',
+      backersLabel: '124',
       timeLeftLabel: '4 Days',
     },
     earningsDistributionPercent: 25,
+    funderCount: 124,
   },
   {
     id: 'creator-2',
@@ -43,10 +44,11 @@ const MOCK_PROJECTS: ProjectCardData[] = [
     stats: {
       amountRaisedLabel: '$12,800',
       goalLabel: '$40,000',
-      backersLabel: '540',
+      backersLabel: '45',
       timeLeftLabel: '9 Days',
     },
     earningsDistributionPercent: 20,
+    funderCount: 45,
   },
   {
     id: 'creator-3',
@@ -58,10 +60,11 @@ const MOCK_PROJECTS: ProjectCardData[] = [
     stats: {
       amountRaisedLabel: '$91,000',
       goalLabel: '$100,000',
-      backersLabel: '2,015',
+      backersLabel: '200',
       timeLeftLabel: '36 Hours',
     },
     earningsDistributionPercent: 30,
+    funderCount: 200,
   },
 ];
 
@@ -69,6 +72,7 @@ function toCardProps(p: Project): ProjectCardData {
   const progressPercent = p.goalAmount > 0
     ? Math.min(100, Math.round((p.amountRaised / p.goalAmount) * 100))
     : 0;
+  const funderCount = Math.min(200, Math.max(0, p.funderCount ?? 0));
   return {
     id: p.id,
     creatorName: p.creatorName,
@@ -78,10 +82,11 @@ function toCardProps(p: Project): ProjectCardData {
     stats: {
       amountRaisedLabel: `$${p.amountRaised.toLocaleString()}`,
       goalLabel: `$${p.goalAmount.toLocaleString()}`,
-      backersLabel: '0',
+      backersLabel: String(funderCount),
       timeLeftLabel: '—',
     },
     earningsDistributionPercent: p.earningsDistributionPercent,
+    funderCount,
   };
 }
 
@@ -151,6 +156,9 @@ export default function DiscoverPage() {
     () => allProjects.find((p) => p.id === selectedProjectId) ?? null,
     [selectedProjectId, allProjects]
   );
+  const selectedProjectFunderCap = (selectedProject && typeof (selectedProject as { funderCount?: number }).funderCount === 'number')
+    ? (selectedProject as { funderCount: number }).funderCount >= 200
+    : false;
 
   const openModal = (projectId: string) => {
     setSelectedProjectId(projectId);
@@ -166,6 +174,11 @@ export default function DiscoverPage() {
 
   const handleFund = async () => {
     if (!selectedProject) return;
+    const funderCount = (selectedProject as { funderCount?: number }).funderCount ?? 0;
+    if (funderCount >= 200) {
+      setStatus('This project has reached the 200 funder maximum.');
+      return;
+    }
     const amountTrimmed = amount.trim();
     if (!amountTrimmed || Number(amountTrimmed) <= 0) {
       setStatus('Enter a valid amount (HBAR) to fund.');
@@ -369,6 +382,11 @@ export default function DiscoverPage() {
               </p>
             )}
 
+            {selectedProjectFunderCap && (
+              <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 mb-3">
+                This project has reached the 200 funder maximum and cannot accept new funders.
+              </p>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
@@ -380,10 +398,10 @@ export default function DiscoverPage() {
               <Button
                 type="button"
                 onClick={handleFund}
-                disabled={isSubmitting}
-                className="px-4 py-1.5 text-xs"
+                disabled={isSubmitting || selectedProjectFunderCap}
+                className="px-4 py-1.5 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Funding...' : 'Confirm Funding'}
+                {isSubmitting ? 'Funding...' : selectedProjectFunderCap ? 'Sold Out' : 'Confirm Funding'}
               </Button>
             </div>
           </div>

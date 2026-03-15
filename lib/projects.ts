@@ -23,6 +23,8 @@ export interface Project {
   earningsDistributionPercent?: number;
   /** URL to uploaded PDF with account information */
   accountInfoPdfUrl?: string;
+  /** Unique funder count for this project (capped at 200 on-chain). From contract or backend. */
+  funderCount?: number;
 }
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {

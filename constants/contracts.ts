@@ -37,6 +37,11 @@ export const SWIFT_FUND_TREASURY_ABI = [
   },
   {
     "inputs": [],
+    "name": "MaxFundersReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NothingToClaim",
     "type": "error"
   },
@@ -184,6 +189,19 @@ export const SWIFT_FUND_TREASURY_ABI = [
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "MAX_FUNDERS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -210,6 +228,25 @@ export const SWIFT_FUND_TREASURY_ABI = [
       }
     ],
     "name": "claimableByCreatorByFunder",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "creatorFunderCount",
     "outputs": [
       {
         "internalType": "uint256",

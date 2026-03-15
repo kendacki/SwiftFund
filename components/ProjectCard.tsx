@@ -1,5 +1,7 @@
 import { memo } from 'react';
 
+export const MAX_FUNDERS = 200;
+
 export interface ProjectCardStats {
   amountRaisedLabel: string;
   goalLabel: string;
@@ -16,6 +18,8 @@ export interface ProjectCardProps {
   stats: ProjectCardStats;
   /** Percentage of earnings shared with backers (0–100). Shown on card when set. */
   earningsDistributionPercent?: number;
+  /** Unique funder count (capped at MAX_FUNDERS). When >= MAX_FUNDERS, Fund button becomes Sold Out. */
+  funderCount?: number;
   onFundClick: (projectId: string) => void;
 }
 
@@ -27,10 +31,13 @@ function ProjectCard({
   progressPercent,
   stats,
   earningsDistributionPercent,
+  funderCount = 0,
   onFundClick,
 }: ProjectCardProps) {
   const safeProgress = Math.max(0, Math.min(100, progressPercent));
   const hasEarningsPct = typeof earningsDistributionPercent === 'number' && earningsDistributionPercent >= 0 && earningsDistributionPercent <= 100;
+  const funders = Math.min(MAX_FUNDERS, Math.max(0, Number.isFinite(funderCount) ? funderCount : 0));
+  const isFullyFunded = funders >= MAX_FUNDERS;
 
   return (
     <div className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4 sm:p-5 shadow-[0_0_20px_rgba(0,0,0,0.35)] min-w-0">
@@ -80,10 +87,16 @@ function ProjectCard({
           <p className="font-heading text-[11px] text-neutral-500 tracking-tight">Goal {stats.goalLabel}</p>
         </div>
         <div>
-          <p className="font-heading text-neutral-500 mb-1 text-xs tracking-tight">Backers</p>
+          <p className="font-heading text-neutral-500 mb-1 text-xs tracking-tight">Funders</p>
           <p className="font-heading text-sm text-white tracking-tight">
-            {stats.backersLabel}
+            {funders} / {MAX_FUNDERS}
           </p>
+          <div className="mt-1 h-1.5 w-full rounded-full bg-neutral-800 overflow-hidden">
+            <div
+              className="h-full bg-neutral-600 rounded-full transition-all"
+              style={{ width: `${(funders / MAX_FUNDERS) * 100}%` }}
+            />
+          </div>
         </div>
         <div>
           <p className="font-heading text-neutral-500 mb-1 text-xs tracking-tight flex items-center gap-1">
@@ -99,10 +112,12 @@ function ProjectCard({
       </div>
 
       <button
-        onClick={() => onFundClick(id)}
-        className="mt-auto inline-flex items-center justify-center rounded-lg bg-red-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-red-500 transition-colors w-full sm:w-auto"
+        type="button"
+        onClick={() => !isFullyFunded && onFundClick(id)}
+        disabled={isFullyFunded}
+        className="mt-auto inline-flex items-center justify-center rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold w-full sm:w-auto transition-colors disabled:cursor-not-allowed disabled:opacity-70 bg-red-600 text-white hover:bg-red-500 disabled:bg-neutral-700 disabled:text-neutral-400 disabled:hover:bg-neutral-700"
       >
-        Fund This Project
+        {isFullyFunded ? 'Sold Out' : 'Fund This Project'}
       </button>
     </div>
   );
