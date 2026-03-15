@@ -19,6 +19,8 @@ contract SwiftFundTreasury {
     error ZeroAmountPerFan();
     error ZeroAddress();
     error TransferFailed();
+    error NothingToClaim();
+    error LengthMismatch();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert OnlyOwner();
@@ -67,5 +69,40 @@ contract SwiftFundTreasury {
         if (msg.value == 0) return;
         if (creator == address(0)) revert ZeroAddress();
         emit CreatorFunded(msg.sender, creator, msg.value);
+    }
+
+    /// @notice Pull: claimable balance per (creator, funder). Used for yield claims.
+    mapping(address => mapping(address => uint256)) public claimableByCreatorByFunder;
+
+    event YieldClaimed(address indexed funder, address indexed creator, uint256 amount);
+
+    /// @notice Claim your share of yield from a creator. Callable by any funder with claimable balance.
+    /// @param creator The creator address you are claiming yield from.
+    function claimYield(address creator) external {
+        uint256 amount = claimableByCreatorByFunder[creator][msg.sender];
+        if (amount == 0) revert NothingToClaim();
+        if (address(this).balance < amount) revert InsufficientBalance();
+        claimableByCreatorByFunder[creator][msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{ value: amount }("");
+        if (!ok) revert TransferFailed();
+        emit YieldClaimed(msg.sender, creator, amount);
+    }
+
+    /// @notice Owner credits claimable yield for funders (e.g. after calculating allocations off-chain).
+    /// @param creator Creator address for attribution.
+    /// @param funders List of funder addresses to credit.
+    /// @param amounts Amount (wei) to credit for each funder.
+    function creditClaimable(
+        address creator,
+        address[] calldata funders,
+        uint256[] calldata amounts
+    ) external onlyOwner {
+        if (creator == address(0)) revert ZeroAddress();
+        if (funders.length != amounts.length) revert LengthMismatch();
+        for (uint256 i = 0; i < funders.length; i++) {
+            if (funders[i] != address(0) && amounts[i] > 0) {
+                claimableByCreatorByFunder[creator][funders[i]] += amounts[i];
+            }
+        }
     }
 }

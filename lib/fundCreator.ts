@@ -54,3 +54,40 @@ export async function fundCreator(
   const receipt = await tx.wait();
   return { hash: receipt?.hash ?? tx.hash };
 }
+
+/**
+ * Call SwiftFundTreasury.depositYield() with msg.value = amountInHbar (in HBAR).
+ * Used by creators to deposit revenue into the treasury so funders can receive yield.
+ */
+export async function depositYield(
+  signer: ethers.Signer,
+  amountInHbar: string
+): Promise<{ hash: string }> {
+  const treasury = new Contract(
+    TREASURY_EVM_ADDRESS || CONTRACT_ADDRESS,
+    SWIFT_FUND_TREASURY_ABI,
+    signer
+  );
+  const valueWei = ethers.parseEther(amountInHbar);
+  const tx = await treasury.depositYield({ value: valueWei });
+  const receipt = await tx.wait();
+  return { hash: receipt?.hash ?? tx.hash };
+}
+
+/**
+ * Call SwiftFundTreasury.claimYield(creator). Used by funders to pull their share of yield.
+ * Reverts with NothingToClaim if no claimable balance for (creator, msg.sender).
+ */
+export async function claimYield(
+  signer: ethers.Signer,
+  creatorAddress: string
+): Promise<{ hash: string }> {
+  const treasury = new Contract(
+    TREASURY_EVM_ADDRESS || CONTRACT_ADDRESS,
+    SWIFT_FUND_TREASURY_ABI,
+    signer
+  );
+  const tx = await treasury.claimYield(creatorAddress);
+  const receipt = await tx.wait();
+  return { hash: receipt?.hash ?? tx.hash };
+}

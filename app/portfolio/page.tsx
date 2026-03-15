@@ -3,7 +3,10 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { Button } from '@/components/Button';
+import { claimYield } from '@/lib/fundCreator';
 
 // Fixed SWIND token ID on Hedera testnet.
 const SWIND_TOKEN_ID = '0.0.8216024';
@@ -27,8 +30,22 @@ interface DashboardTx {
   time: string;
 }
 
+/** Funded project entry for claim yield list (from API or mock). */
+interface FundedProject {
+  creatorAddress: string;
+  label: string;
+}
+
+function SpinnerIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="32 24" className="animate-spin" style={{ transformOrigin: '12px 12px' }} />
+    </svg>
+  );
+}
+
 export default function PortfolioPage() {
-  const { user } = usePrivy();
+  const { user, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const [address, setAddress] = useState<string | null>(null);
   const [showAddFunds, setShowAddFunds] = useState(false);
@@ -45,6 +62,12 @@ export default function PortfolioPage() {
   const [hbarUsdPrice, setHbarUsdPrice] = useState<number>(0);
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Claim yield (funder pull)
+  const [fundedProjects, setFundedProjects] = useState<FundedProject[]>([]);
+  const [claimStatus, setClaimStatus] = useState<string | null>(null);
+  const [claimingCreator, setClaimingCreator] = useState<string | null>(null);
+  const [claimCreatorInput, setClaimCreatorInput] = useState('');
 
   const totalUsdBalance =
     hbarBalance * hbarUsdPrice + swindBalance * SWIND_MOCK_PRICE;
@@ -253,6 +276,58 @@ export default function PortfolioPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Fetch funded projects (creators the user has funded on Discover). Replace with real API when available.
+  useEffect(() => {
+    if (!address) return;
+    let cancelled = false;
+    getAccessToken()
+      .then((token) => {
+        if (cancelled) return null;
+        const headers: HeadersInit = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return fetch('/api/portfolio/funded', { headers });
+      })
+      .then((res) => {
+        if (cancelled || !res) return { projects: [] as FundedProject[] };
+        return res.json() as Promise<{ projects?: FundedProject[] }>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setFundedProjects(Array.isArray(data?.projects) ? data.projects : []);
+      })
+      .catch(() => !cancelled && setFundedProjects([]));
+    return () => { cancelled = true; };
+  }, [address, getAccessToken]);
+
+  const handleClaimYield = async (creatorAddress: string) => {
+    const wallet = wallets[0];
+    if (!wallet?.getEthereumProvider) {
+      setClaimStatus('Wallet not ready. Please connect your wallet and try again.');
+      return;
+    }
+    setClaimingCreator(creatorAddress);
+    setClaimStatus(null);
+    try {
+      const provider = await wallet.getEthereumProvider();
+      const ethersProvider = new ethers.BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
+      const { hash } = await claimYield(signer, creatorAddress);
+      setClaimStatus(`Yield claimed successfully! Tx: ${hash.slice(0, 10)}…${hash.slice(-8)}`);
+      setTimeout(() => setClaimStatus(null), 5000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Claim failed.';
+      const friendly =
+        msg.includes('NothingToClaim') || msg.includes('nothing to claim')
+          ? 'No new yield available to claim at this time.'
+          : msg.includes('user rejected') || msg.includes('denied')
+            ? 'Transaction was rejected.'
+            : msg;
+      setClaimStatus(friendly);
+    } finally {
+      setClaimingCreator(null);
+    }
+  };
+
   const qrUrl = address
     ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`
     : '';
@@ -441,6 +516,109 @@ export default function PortfolioPage() {
                 >
                   Send
                 </button>
+              </div>
+            </section>
+
+            {/* Claim yield (funder pull) */}
+            <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+              <div className="border-b border-neutral-800 px-4 sm:px-6 py-3">
+                <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
+                  Claim yield
+                </h2>
+                <p className="font-heading text-xs text-neutral-500 mt-1 tracking-tight">
+                  Claim your share of yield from creators you have funded.
+                </p>
+              </div>
+              <div className="p-4 sm:p-6 space-y-4">
+                {fundedProjects.length > 0 ? (
+                  <ul className="space-y-3">
+                    {fundedProjects.map((project) => (
+                      <li
+                        key={project.creatorAddress}
+                        className="flex flex-wrap items-center justify-between gap-3 py-3 border-b border-neutral-800/80 last:border-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-heading text-sm font-medium text-white tracking-tight truncate">
+                            {project.label}
+                          </p>
+                          <p className="font-mono text-xs text-neutral-500 truncate mt-0.5">
+                            {project.creatorAddress.slice(0, 10)}…{project.creatorAddress.slice(-8)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => handleClaimYield(project.creatorAddress)}
+                          disabled={claimingCreator !== null}
+                          className="disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                        >
+                          {claimingCreator === project.creatorAddress ? (
+                            <>
+                              <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 mr-2" />
+                              Claiming…
+                            </>
+                          ) : (
+                            'Claim Yield'
+                          )}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="font-heading text-sm text-neutral-500 tracking-tight">
+                      No funded projects yet. Fund projects on Discover to see them here, or enter a creator address below to claim.
+                    </p>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex-1 min-w-[200px]">
+                        <label htmlFor="claim-creator-address" className="block text-xs text-neutral-500 mb-1">
+                          Creator address
+                        </label>
+                        <input
+                          id="claim-creator-address"
+                          type="text"
+                          value={claimCreatorInput}
+                          onChange={(e) => setClaimCreatorInput(e.target.value)}
+                          placeholder="0x..."
+                          disabled={claimingCreator !== null}
+                          className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono disabled:opacity-60"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const addr = claimCreatorInput.trim();
+                          if (addr.length < 10) {
+                            setClaimStatus('Enter a valid creator address (0x...).');
+                            return;
+                          }
+                          handleClaimYield(addr);
+                        }}
+                        disabled={claimingCreator !== null}
+                        className="disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {claimingCreator ? (
+                          <>
+                            <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 mr-2" />
+                            Claiming…
+                          </>
+                        ) : (
+                          'Claim Yield'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {claimStatus && (
+                  <p
+                    className={`text-xs whitespace-pre-wrap rounded-lg p-2 border ${
+                      claimStatus.startsWith('Yield claimed successfully')
+                        ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                        : 'text-red-300 bg-red-500/10 border-red-500/30'
+                    }`}
+                  >
+                    {claimStatus}
+                  </p>
+                )}
               </div>
             </section>
 
