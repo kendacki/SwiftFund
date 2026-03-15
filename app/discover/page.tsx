@@ -12,7 +12,9 @@ import type { Project } from '@/lib/projects';
 
 type FilterKey = 'all' | 'trending' | 'endingSoon';
 
-const MOCK_PROJECTS: ProjectCardProps[] = [
+type ProjectCardData = Omit<ProjectCardProps, 'onFundClick'>;
+
+const MOCK_PROJECTS: ProjectCardData[] = [
   {
     id: 'creator-1',
     creatorName: 'Channel Redstone',
@@ -57,7 +59,7 @@ const MOCK_PROJECTS: ProjectCardProps[] = [
   },
 ];
 
-function toCardProps(p: Project): ProjectCardProps {
+function toCardProps(p: Project): ProjectCardData {
   const progressPercent = p.goalAmount > 0
     ? Math.min(100, Math.round((p.amountRaised / p.goalAmount) * 100))
     : 0;
@@ -76,7 +78,7 @@ function toCardProps(p: Project): ProjectCardProps {
   };
 }
 
-interface DiscoverProject extends ProjectCardProps {
+interface DiscoverProject extends ProjectCardData {
   tags?: FilterKey[];
 }
 
