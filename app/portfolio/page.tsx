@@ -5,27 +5,24 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-const SWIND_TOKEN_ID = process.env.NEXT_PUBLIC_SWIND_TOKEN_ID ?? '—';
+// Fixed SWIND token ID on Hedera testnet.
+const SWIND_TOKEN_ID = '0.0.8216024';
 
-// Placeholder token breakdown; replace with real balances. Logos in public/logos/
-const MOCK_TOKENS = [
-  { symbol: 'HBAR', name: 'Hedera', amount: '—', equivalent: '—', logo: '/logos/hedera.png' },
-  { symbol: 'SWIND', name: 'SwiftFund', amount: '—', equivalent: '—', logo: '/logos/swind.png' },
-];
+// Logos in public/logos/
+const TOKENS = [
+  { symbol: 'HBAR', name: 'Hedera', logo: '/logos/hedera.png' },
+  { symbol: 'SWIND', name: 'SwiftFund', logo: '/logos/swind.png' },
+] as const;
 
-interface TxRow {
+type TokenSymbol = (typeof TOKENS)[number]['symbol'];
+
+interface DashboardTx {
   id: string;
   hash: string;
   amount: string;
-  tokenType: string;
+  tokenType: TokenSymbol | string;
   time: string;
 }
-
-const MOCK_TXS: TxRow[] = [
-  { id: '1', hash: '0x7a3f...2e1c', amount: '+1,240 SWIND', tokenType: 'SWIND', time: '2 hours ago' },
-  { id: '2', hash: '0x9b2c...4d8a', amount: '-50 HBAR', tokenType: 'HBAR', time: '1 day ago' },
-  { id: '3', hash: '0x1e5f...8b3d', amount: '+100 SWIND', tokenType: 'SWIND', time: '3 days ago' },
-];
 
 export default function PortfolioPage() {
   const { user } = usePrivy();
@@ -38,8 +35,14 @@ export default function PortfolioPage() {
   const [sendAmount, setSendAmount] = useState('');
   const [sendTo, setSendTo] = useState('');
   const [sendError, setSendError] = useState<string | null>(null);
-  const [hbarBalance, setHbarBalance] = useState<string | null>(null);
 
+  // Dashboard state
+  const [hbarBalance, setHbarBalance] = useState<number>(0);
+  const [swindBalance, setSwindBalance] = useState<number>(0);
+  const [transactions, setTransactions] = useState<DashboardTx[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Resolve the active wallet address from Privy.
   useEffect(() => {
     const primaryWallet = wallets[0];
     if (primaryWallet?.address) {
@@ -51,39 +54,166 @@ export default function PortfolioPage() {
     }
   }, [wallets, user]);
 
-  // Fetch live HBAR balance from Hedera testnet mirror node whenever address changes.
+  // Fetch live dashboard data (balances + recent transactions) from Hedera mirror node.
   useEffect(() => {
     if (!address) return;
 
-    const controller = new AbortController();
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const fetchBalance = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await fetch(
-          `https://testnet.mirrornode.hedera.com/api/v1/accounts?account.evm_address=${address.toLowerCase()}`,
-          { signal: controller.signal }
+        setIsLoading(true);
+
+        // 1) Resolve Hedera account ID from the wallet address (EVM or account form).
+        const accountRes = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}`
         );
-        if (!res.ok) return;
-        const data = await res.json();
-        const account = Array.isArray(data?.accounts) ? data.accounts[0] : null;
-        const tinybar = account?.balance?.balance;
-        if (typeof tinybar !== 'number') return;
-        const hbar = tinybar / 1e8;
-        setHbarBalance(
-          hbar.toLocaleString(undefined, {
-            maximumFractionDigits: 8,
-          })
+        if (!accountRes.ok) {
+          if (!cancelled) {
+            setHbarBalance(0);
+            setSwindBalance(0);
+            setTransactions([]);
+          }
+          return;
+        }
+
+        const accountJson = await accountRes.json();
+        const accountId: string | undefined = accountJson?.account;
+        if (!accountId) {
+          if (!cancelled) {
+            setHbarBalance(0);
+            setSwindBalance(0);
+            setTransactions([]);
+          }
+          return;
+        }
+
+        // 2) Balances
+        const balancesRes = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/balances?account.id=${accountId}`
         );
-      } catch (err) {
-        if ((err as any)?.name === 'AbortError') return;
-        // On error, fall back to placeholder.
-        setHbarBalance(null);
+        if (balancesRes.ok) {
+          const balancesJson = await balancesRes.json();
+          const entry = Array.isArray(balancesJson?.balances)
+            ? balancesJson.balances[0]
+            : null;
+          const tinybar: number | undefined = entry?.balance;
+          const tokens: { token_id: string; balance: number }[] =
+            entry?.tokens ?? [];
+
+          if (typeof tinybar === 'number') {
+            const hbar = tinybar / 1e8;
+            if (!cancelled) setHbarBalance(hbar);
+          }
+
+          const swindToken = tokens.find((t) => t.token_id === SWIND_TOKEN_ID);
+          if (swindToken && typeof swindToken.balance === 'number') {
+            const swind = swindToken.balance / 1e8;
+            if (!cancelled) setSwindBalance(swind);
+          } else if (!cancelled) {
+            setSwindBalance(0);
+          }
+        }
+
+        // 3) Recent transactions
+        const txRes = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=${accountId}&limit=10&order=desc`
+        );
+
+        if (txRes.ok) {
+          const txJson = await txRes.json();
+          const txs: any[] = Array.isArray(txJson?.transactions)
+            ? txJson.transactions
+            : [];
+
+          const mapped: DashboardTx[] = txs.map((tx, idx) => {
+            const consensus = tx.consensus_timestamp as string | undefined;
+            let time = '—';
+            if (consensus) {
+              const [secondsStr] = consensus.split('.');
+              const seconds = Number(secondsStr);
+              if (!Number.isNaN(seconds)) {
+                time = new Date(seconds * 1000).toLocaleString();
+              }
+            }
+
+            // Default type
+            let tokenType: TokenSymbol | string = 'HBAR';
+            let amountLabel = '—';
+
+            // Prefer token transfers for SWIND, otherwise HBAR transfers.
+            const tokenTransfers: any[] = tx.token_transfers ?? [];
+            const swindTransfer = tokenTransfers.find(
+              (t) => t.account === accountId && t.token_id === SWIND_TOKEN_ID
+            );
+
+            if (swindTransfer) {
+              const raw = Number(swindTransfer.amount ?? 0);
+              const sign = raw > 0 ? '+' : '';
+              const amt = Math.abs(raw) / 1e8;
+              tokenType = 'SWIND';
+              amountLabel = `${sign}${amt.toLocaleString(undefined, {
+                maximumFractionDigits: 4,
+              })} SWIND`;
+            } else if (Array.isArray(tx.transfers)) {
+              const ownTransfer = tx.transfers.find(
+                (t: any) => t.account === accountId
+              );
+              if (ownTransfer) {
+                const raw = Number(ownTransfer.amount ?? 0);
+                const sign = raw > 0 ? '+' : '';
+                const amt = Math.abs(raw) / 1e8;
+                tokenType = 'HBAR';
+                amountLabel = `${sign}${amt.toLocaleString(undefined, {
+                  maximumFractionDigits: 4,
+                })} HBAR`;
+              }
+            }
+
+            const hash =
+              (tx.transaction_hash as string | undefined) ??
+              (tx.transaction_id as string | undefined) ??
+              '—';
+
+            const shortHash =
+              typeof hash === 'string' && hash.length > 16
+                ? `${hash.slice(0, 10)}…${hash.slice(-6)}`
+                : hash;
+
+            return {
+              id: `${tx.transaction_id ?? idx}`,
+              hash: shortHash,
+              amount: amountLabel,
+              tokenType,
+              time,
+            };
+          });
+
+          if (!cancelled) {
+            setTransactions(mapped);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setTransactions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchBalance();
+    // Initial fetch
+    fetchDashboardData();
+    // Poll every 15 seconds
+    intervalId = setInterval(fetchDashboardData, 15000);
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [address]);
 
   const copyAddress = () => {
@@ -164,7 +294,7 @@ export default function PortfolioPage() {
 
               {breakdownOpen && (
                 <div className="border-t border-neutral-800 px-4 sm:px-6 py-4 space-y-3">
-                  {MOCK_TOKENS.map((token) => (
+                  {TOKENS.map((token) => (
                     <div
                       key={token.symbol}
                       className="flex items-center justify-between py-2 border-b border-neutral-800/60 last:border-0"
@@ -185,12 +315,16 @@ export default function PortfolioPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-heading text-sm font-semibold text-white tracking-tight">
-                          {token.symbol === 'HBAR' && hbarBalance !== null
-                            ? `${hbarBalance} HBAR`
-                            : token.amount}
+                          {token.symbol === 'HBAR'
+                            ? `${hbarBalance.toLocaleString(undefined, {
+                                maximumFractionDigits: 4,
+                              })} HBAR`
+                            : `${swindBalance.toLocaleString(undefined, {
+                                maximumFractionDigits: 4,
+                              })} SWIND`}
                         </p>
                         <p className="font-heading text-xs text-neutral-500 tracking-tight">
-                          {token.equivalent}
+                          {token.name}
                         </p>
                       </div>
                     </div>
@@ -291,14 +425,34 @@ export default function PortfolioPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {MOCK_TXS.map((tx) => (
-                      <tr key={tx.id} className="border-b border-neutral-800/80 last:border-0">
-                        <td className="px-4 sm:px-6 py-3 font-mono text-neutral-300">{tx.hash}</td>
-                        <td className="px-4 sm:px-6 py-3 font-heading text-white">{tx.amount}</td>
-                        <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType}</td>
-                        <td className="px-4 sm:px-6 py-3 text-neutral-500">{tx.time}</td>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 sm:px-6 py-4 text-center text-xs text-neutral-500"
+                        >
+                          Loading transactions…
+                        </td>
                       </tr>
-                    ))}
+                    ) : transactions.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 sm:px-6 py-4 text-center text-xs text-neutral-500"
+                        >
+                          No recent transactions found.
+                        </td>
+                      </tr>
+                    ) : (
+                      transactions.map((tx) => (
+                        <tr key={tx.id} className="border-b border-neutral-800/80 last:border-0">
+                          <td className="px-4 sm:px-6 py-3 font-mono text-neutral-300">{tx.hash}</td>
+                          <td className="px-4 sm:px-6 py-3 font-heading text-white">{tx.amount}</td>
+                          <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType}</td>
+                          <td className="px-4 sm:px-6 py-3 text-neutral-500">{tx.time}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
