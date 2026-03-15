@@ -347,7 +347,7 @@ export default function LandingPage() {
         className="relative z-10 w-full bg-red-600 py-4 sm:py-5"
       >
         <p className="font-heading text-white text-center text-sm sm:text-base tracking-tight w-full max-w-7xl mx-auto px-4">
-          © 2026 SwiftFunz. All Rights Reserved.
+          © 2026 SwiftFund. All Rights Reserved.
         </p>
       </motion.footer>
     </div>
