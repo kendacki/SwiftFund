@@ -4,6 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        sans: ['var(--font-roboto)', 'system-ui', 'sans-serif'],
         heading: ['var(--font-roboto)', 'sans-serif'],
       },
     },

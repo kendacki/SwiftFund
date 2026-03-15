@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/Button';
 import { motion } from 'framer-motion';
 import { usePrivy } from '@privy-io/react-auth';
 import DashboardCard from '@/components/DashboardCard';
@@ -327,13 +328,9 @@ export default function CreatorDashboard() {
             <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
               My Projects
             </h2>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 text-sm transition-colors"
-            >
+            <Button type="button" onClick={openCreate}>
               Create project
-            </button>
+            </Button>
           </div>
           <div className="p-4 sm:p-6">
             {projectsLoading ? (
@@ -433,11 +430,11 @@ export default function CreatorDashboard() {
               <DashboardCard
                 title="Actions"
                 value={
-                  <button
+                  <Button
                     type="button"
                     onClick={handleDistributeYield}
                     disabled={isDistributing}
-                    className="rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isDistributing ? (
                       <>
@@ -447,7 +444,7 @@ export default function CreatorDashboard() {
                     ) : (
                       'Distribute Yield'
                     )}
-                  </button>
+                  </Button>
                 }
               />
             </div>

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
+import { Button } from './Button';
 
 const PROFILE_IMAGE_KEY_PREFIX = 'swiftfund_profile_';
 const PROFILE_IMAGE_MAX_SIZE = 256; // Resize to this (square) for upload and display
@@ -320,12 +321,13 @@ export default function LoginButton() {
           </div>
         </>
       ) : (
-        <button
+        <Button
+          type="button"
           onClick={login}
-          className="font-heading bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all transform hover:scale-105 active:scale-95"
+          className="px-6 py-2 shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all transform hover:scale-105 active:scale-95"
         >
           Login
-        </button>
+        </Button>
       )}
     </div>
   );

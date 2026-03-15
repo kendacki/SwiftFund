@@ -4,7 +4,7 @@ import AppNav from '@/components/AppNav';
 import { Roboto } from 'next/font/google';
 
 const roboto = Roboto({
-  weight: ['400', '700', '900'],
+  weight: ['400', '500', '700', '900'],
   subsets: ['latin'],
   variable: '--font-roboto',
   display: 'swap',
@@ -45,7 +45,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://auth.privy.io" />
         <link rel="dns-prefetch" href="https://www.freelogovectors.net" />
       </head>
-      <body className="bg-neutral-950 text-white font-[verdana] antialiased">
+      <body className="bg-neutral-950 text-white antialiased font-sans">
         <Providers appId={appId}>
           <AppNav />
           {children}
