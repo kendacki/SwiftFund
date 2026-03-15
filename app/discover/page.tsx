@@ -116,13 +116,21 @@ export default function DiscoverPage() {
     return mockWithTags;
   }, [apiProjects]);
 
-  const filteredProjects = useMemo(
-    () =>
-      allProjects.filter((p) =>
-        activeFilter === 'all' ? true : (p.tags ?? ['all']).includes(activeFilter)
-      ),
-    [activeFilter, allProjects]
-  );
+  const filteredProjects = useMemo(() => {
+    if (activeFilter === 'all') return allProjects;
+
+    const tagged = allProjects.filter((p) =>
+      (p.tags ?? ['all']).includes(activeFilter)
+    );
+
+    // If no projects are explicitly tagged for this filter yet,
+    // fall back to showing all projects so the grid never appears empty.
+    if (tagged.length === 0) {
+      return allProjects;
+    }
+
+    return tagged;
+  }, [activeFilter, allProjects]);
 
   const selectedProject = useMemo(
     () => allProjects.find((p) => p.id === selectedProjectId) ?? null,
