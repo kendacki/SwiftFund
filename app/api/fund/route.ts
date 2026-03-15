@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrivyClient } from '@/lib/privy';
 import { fundProject } from '@/lib/hedera';
-import { loadProjectsFromStorage, saveProjectsToStorage } from '@/lib/projectsStorage';
+import { incrementAmountRaised } from '@/lib/projectsDb';
 
 export async function POST(req: Request) {
   try {
@@ -26,13 +26,7 @@ export async function POST(req: Request) {
     const result = await fundProject(projectId, amount);
 
     try {
-      const projects = await loadProjectsFromStorage();
-      const index = projects.findIndex((p) => p.id === projectId);
-      if (index !== -1) {
-        projects[index].amountRaised = (projects[index].amountRaised ?? 0) + amount;
-        projects[index].updatedAt = new Date().toISOString();
-        await saveProjectsToStorage(projects);
-      }
+      await incrementAmountRaised(projectId, amount);
     } catch (e) {
       console.error('Failed to update project amountRaised:', e);
     }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrivyClient } from '@/lib/privy';
 import { executeDistribution } from '@/lib/hedera';
-import { loadProjectsFromStorage } from '@/lib/projectsStorage';
+import { getProjects } from '@/lib/projectsDb';
 
 const DEFAULT_DISTRIBUTION_AMOUNT = 136880;
 
@@ -30,8 +30,7 @@ export async function POST(req: Request) {
       // no body or invalid JSON
     }
 
-    const projects = await loadProjectsFromStorage();
-    const creatorProjects = projects.filter((p) => p.creatorId === userId);
+    const creatorProjects = await getProjects({ creatorId: userId });
     const totalFunded = creatorProjects.reduce((sum, p) => sum + (p.amountRaised ?? 0), 0);
 
     if (totalFunded > 0) {

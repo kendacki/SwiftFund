@@ -71,7 +71,11 @@ export default function LoginButton() {
   const popupRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Restore profile image: fetch from API (backend), fallback to localStorage cache
+  // Append cache-bust so browser always fetches latest (blob URL is fixed; content changes on upload).
+  const toCacheBusted = (url: string, ts?: number) =>
+    url + (url.includes('?') ? '&' : '?') + 't=' + (ts ?? Date.now());
+
+  // Restore profile image: fetch from API (backend), fallback to localStorage cache. Always use cache-busted URL so new uploads show immediately.
   useEffect(() => {
     if (!authenticated || !user?.id) {
       setProfileImageUrl(null);
@@ -80,22 +84,36 @@ export default function LoginButton() {
     const key = getProfileStorageKey(user.id);
     let cancelled = false;
 
+    const getStored = (): { url: string; ts?: number } | null => {
+      if (typeof window === 'undefined' || !key) return null;
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw) as { url?: string; ts?: number };
+        if (parsed && typeof parsed.url === 'string') return { url: parsed.url, ts: parsed.ts };
+      } catch {
+        /* stored as plain URL (legacy) */
+      }
+      return { url: raw };
+    };
+
     const loadAvatar = async () => {
       try {
         const token = await getAccessToken();
         if (cancelled || !token) {
-          const stored = key && typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-          if (stored) setProfileImageUrl(stored);
+          const stored = getStored();
+          if (stored) setProfileImageUrl(toCacheBusted(stored.url, stored.ts));
           return;
         }
         const res = await fetch('/api/profile/avatar', {
           headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
         });
         if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
           if (data?.url) {
-            setProfileImageUrl(data.url);
+            setProfileImageUrl(toCacheBusted(data.url));
             if (key) {
               try {
                 localStorage.setItem(key, data.url);
@@ -110,8 +128,9 @@ export default function LoginButton() {
         /* ignore */
       }
       if (cancelled) return;
-      const stored = key && typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-      if (stored) setProfileImageUrl(stored);
+      const stored = getStored();
+      if (stored) setProfileImageUrl(toCacheBusted(stored.url, stored.ts));
+      else setProfileImageUrl(null);
     };
 
     loadAvatar();
@@ -179,11 +198,11 @@ export default function LoginButton() {
       }
       if (data?.url) {
         setUploadError(null);
-        const urlWithCacheBust = `${data.url}${data.url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-        setProfileImageUrl(urlWithCacheBust);
+        const ts = Date.now();
+        setProfileImageUrl(toCacheBusted(data.url, ts));
         if (key) {
           try {
-            localStorage.setItem(key, data.url);
+            localStorage.setItem(key, JSON.stringify({ url: data.url, ts }));
           } catch {
             /* ignore */
           }
@@ -222,6 +241,7 @@ export default function LoginButton() {
             >
               {profileImageUrl ? (
                 <img
+                  key={profileImageUrl}
                   src={profileImageUrl}
                   alt="Profile"
                   className="h-full w-full object-cover object-center aspect-square min-w-0 min-h-0"

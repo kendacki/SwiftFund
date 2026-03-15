@@ -360,13 +360,9 @@ export default function CreatorDashboard() {
                       </button>
                     )}
                     {(p.status === 'pending' || p.status === 'processing') && (
-                      <button
-                        type="button"
-                        onClick={() => setProjectStatus(p, 'approved')}
-                        className="rounded-lg border border-emerald-500/50 hover:bg-emerald-500/10 text-emerald-400 px-3 py-1.5 text-xs font-medium transition-colors"
-                      >
-                        Mark approved (demo)
-                      </button>
+                      <span className="text-xs text-neutral-500">
+                        Pending approval
+                      </span>
                     )}
                     {p.status === 'approved' && (
                       <Link

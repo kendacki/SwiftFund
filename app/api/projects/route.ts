@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { getPrivyClient } from '@/lib/privy';
-import { loadProjectsFromStorage, saveProjectsToStorage } from '@/lib/projectsStorage';
+import { getProjects, insertProject, updateProjectStatus, getProjectById } from '@/lib/projectsDb';
 import type { Project, ProjectStatus } from '@/lib/projects';
 
 const PROJECTS_DATA_PATH = 'projects/data.json';
@@ -27,21 +27,18 @@ async function getAuthUserId(req: Request): Promise<string | null> {
 
 export async function GET(req: Request) {
   try {
-    ensureBlobToken();
     const { searchParams } = new URL(req.url);
     const mine = searchParams.get('mine') === '1';
     const discover = searchParams.get('discover') === '1';
     const userId = mine ? await getAuthUserId(req) : null;
 
-    const projects = await loadProjectsFromStorage();
-
     if (discover) {
-      const approved = projects.filter((p) => p.status === 'approved');
-      return NextResponse.json({ projects: approved });
+      const projects = await getProjects({ status: 'approved' });
+      return NextResponse.json({ projects });
     }
     if (mine && userId) {
-      const myProjects = projects.filter((p) => p.creatorId === userId);
-      return NextResponse.json({ projects: myProjects });
+      const projects = await getProjects({ creatorId: userId });
+      return NextResponse.json({ projects });
     }
 
     return NextResponse.json({ projects: [] });
@@ -84,7 +81,6 @@ export async function POST(req: Request) {
       ? Math.round(earningsPercent)
       : undefined;
 
-    const projects = await loadProjectsFromStorage();
     const id = `proj_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const now = new Date().toISOString();
 
@@ -135,8 +131,7 @@ export async function POST(req: Request) {
       accountInfoPdfUrl: accountInfoPdfUrl || undefined,
     };
 
-    projects.push(newProject);
-    await saveProjectsToStorage(projects);
+    await insertProject(newProject);
 
     return NextResponse.json({ project: newProject });
   } catch (error: unknown) {
@@ -148,7 +143,6 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    ensureBlobToken();
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -161,24 +155,30 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Invalid id or status' }, { status: 400 });
     }
 
-    const projects = await loadProjectsFromStorage();
-    const index = projects.findIndex((p) => p.id === id && p.creatorId === userId);
-    if (index === -1) {
+    const existing = await getProjectById(id);
+    if (!existing || existing.creatorId !== userId) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    if (status === 'pending' && !projects[index].imageUrl) {
+    if (status === 'approved' || status === 'processing') {
+      return NextResponse.json(
+        { error: 'Only an approver can approve projects. Use the approve API with your approver secret.' },
+        { status: 403 }
+      );
+    }
+
+    if (status === 'pending' && !existing.imageUrl) {
       return NextResponse.json(
         { error: 'Upload an image before submitting for approval' },
         { status: 400 }
       );
     }
 
-    projects[index].status = status;
-    projects[index].updatedAt = new Date().toISOString();
-    await saveProjectsToStorage(projects);
-
-    return NextResponse.json({ project: projects[index] });
+    const updated = await updateProjectStatus(id, status, userId);
+    if (!updated) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+    return NextResponse.json({ project: updated });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update project';
     console.error(message);

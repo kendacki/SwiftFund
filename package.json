@@ -13,6 +13,7 @@
     "@hashgraph/sdk": "^2.49.1",
     "@privy-io/react-auth": "^1.59.0",
     "@privy-io/server-auth": "^1.32.0",
+    "@supabase/supabase-js": "^2.45.0",
     "@vercel/blob": "^0.24.1",
     "dotenv": "^16.4.5",
     "ethers": "^6.16.0",
