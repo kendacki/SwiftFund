@@ -52,7 +52,7 @@ export default function AppNav() {
   const logoHref = '/portfolio';
 
   return (
-    <nav className="relative z-50 flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-b border-neutral-800/50">
+    <nav className="sticky top-0 z-50 flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-b border-neutral-800/50 bg-neutral-950/95 backdrop-blur-sm">
       <div className="flex items-center min-w-0">
         <Link href={logoHref} className="inline-flex items-center gap-2 min-w-0">
           <img
