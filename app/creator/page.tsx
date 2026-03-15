@@ -257,20 +257,25 @@ export default function CreatorDashboard() {
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto space-y-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div className="flex-1 min-w-0">
             <Link
               href="/"
               className="text-sm text-neutral-400 hover:text-white transition-colors inline-flex items-center gap-1"
             >
               <span aria-hidden>←</span> Home
             </Link>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-5 tracking-tight">
-              Creator Dashboard
-            </h1>
+            <div className="mt-5 mb-6 sm:mb-8 space-y-3 text-center sm:text-left">
+              <h1 className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white">
+                Creator Dashboard
+              </h1>
+              <p className="font-heading text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0 tracking-tight">
+                Manage your projects and distribute yield to your supporters.
+              </p>
+            </div>
           </div>
           <Link
             href="/discover"
-            className="text-sm text-neutral-400 hover:text-white transition-colors"
+            className="text-sm text-neutral-400 hover:text-white transition-colors shrink-0"
           >
             Discover
           </Link>
