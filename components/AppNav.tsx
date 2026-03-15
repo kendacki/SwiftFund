@@ -54,7 +54,21 @@ export default function AppNav() {
 
   return (
     <nav className="relative z-50 flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-b border-neutral-800/50">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center min-w-0">
+        <Link href={logoHref} className="inline-flex items-center gap-2 min-w-0">
+          <img
+            src="https://www.freelogovectors.net/wp-content/uploads/2019/10/swift-logo-program.png"
+            alt="Swift logo"
+            className="h-6 w-auto shrink-0"
+            width={24}
+            height={24}
+          />
+          <span className="font-heading text-lg sm:text-xl font-extrabold tracking-tight truncate text-white">
+            SwiftFund
+          </span>
+        </Link>
+      </div>
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {showWidget && (
           <div className="relative shrink-0" ref={menuRef}>
             <button
@@ -68,7 +82,7 @@ export default function AppNav() {
               <MenuGridIcon className="w-5 h-5" />
             </button>
             {menuOpen && (
-              <div className="absolute left-0 top-full mt-2 min-w-[180px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-xl py-2 z-50">
+              <div className="absolute right-0 top-full mt-2 min-w-[180px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-xl py-2 z-[100]">
                 {SUBPAGE_LINKS.map((link) => (
                   <Link
                     key={link.href}
@@ -87,26 +101,6 @@ export default function AppNav() {
             )}
           </div>
         )}
-        <Link href={logoHref} className="inline-flex items-center gap-2 min-w-0">
-          <img
-            src="https://www.freelogovectors.net/wp-content/uploads/2019/10/swift-logo-program.png"
-            alt="Swift logo"
-            className="h-6 w-auto shrink-0"
-            width={24}
-            height={24}
-          />
-          <span className="font-heading text-lg sm:text-xl font-extrabold tracking-tight truncate text-white">
-            SwiftFund
-          </span>
-        </Link>
-      </div>
-      <div className="flex items-center gap-3 sm:gap-6 shrink-0">
-        <Link
-          href="/discover"
-          className="text-xs sm:text-sm font-medium text-neutral-400 hover:text-white transition-colors hidden sm:inline"
-        >
-          Discover
-        </Link>
         <LoginButton />
       </div>
     </nav>

@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { useRouter } from 'next/navigation';
 
 const PROFILE_IMAGE_KEY_PREFIX = 'swiftfund_profile_';
 const PROFILE_IMAGE_MAX_SIZE = 256; // Resize to this (square) for upload and display
@@ -66,7 +65,6 @@ function resizeImageFile(file: File): Promise<File> {
 
 export default function LoginButton() {
   const { login, logout, authenticated, user, ready, getAccessToken } = usePrivy();
-  const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
@@ -242,19 +240,6 @@ export default function LoginButton() {
     <div className="flex items-center gap-4" ref={popupRef}>
       {authenticated ? (
         <>
-          <button
-            onClick={() => router.push('/portfolio')}
-            className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
-          >
-            Wallet
-          </button>
-          <button
-            onClick={() => router.push('/creator')}
-            className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
-          >
-            Dashboard
-          </button>
-
           <div className="relative">
             <button
               type="button"
