@@ -80,7 +80,7 @@ export async function insertProject(project: Project): Promise<void> {
     earnings_distribution_percent: project.earningsDistributionPercent ?? null,
     account_info_pdf_url: project.accountInfoPdfUrl ?? null,
   };
-  const { error } = await supabase.from('projects').insert(row);
+  const { error } = await supabase.from('projects').insert(row as never);
   if (error) {
     console.error('insertProject error:', error);
     throw error;
