@@ -242,17 +242,19 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex-shrink-0 w-full md:w-72 lg:w-80 flex items-center justify-center min-h-[200px]"
+              className="flex-shrink-0 w-full md:w-72 lg:w-80 flex items-center justify-center"
             >
-              <img
-                src="/images/content-creators-vector.svg"
-                alt="Content creators: video, music, and food creators with community engagement"
-                className="w-full max-w-sm h-auto object-contain"
-                width={400}
-                height={300}
-                loading="lazy"
-                decoding="async"
-              />
+              <div className="w-full rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950 shadow-lg">
+                <img
+                  src="/images/content-creator-setup.png"
+                  alt="Content creator recording in a modern studio with professional camera and lighting"
+                  className="w-full h-auto object-cover aspect-[4/3]"
+                  width={400}
+                  height={300}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             </motion.div>
           </div>
         </div>
