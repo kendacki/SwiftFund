@@ -157,14 +157,12 @@ export default function LandingPage() {
                 Discover projects
               </Link>
             </div>
-            <div className="flex-shrink-0 w-full md:w-72 lg:w-80">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950">
-                <img
-                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80"
-                  alt="Community and creators collaborating"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              </div>
+            <div className="flex-shrink-0 w-full md:w-72 lg:w-80 flex items-center justify-center">
+              <img
+                src="/images/content-creators-vector.png"
+                alt="Content creators: video, music, and food creators with community engagement"
+                className="w-full max-w-sm h-auto object-contain"
+              />
             </div>
           </div>
         </div>
