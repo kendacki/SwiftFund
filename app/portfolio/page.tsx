@@ -37,6 +37,7 @@ export default function PortfolioPage() {
   const [sendToken, setSendToken] = useState<'HBAR' | 'SWIND'>('SWIND');
   const [sendAmount, setSendAmount] = useState('');
   const [sendTo, setSendTo] = useState('');
+  const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.wallet?.address) {
@@ -58,7 +59,7 @@ export default function PortfolioPage() {
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <Link
             href={address ? '/creator' : '/'}
             className="text-sm text-neutral-400 hover:text-white transition-colors inline-flex items-center gap-1"
@@ -185,7 +186,10 @@ export default function PortfolioPage() {
                     type="text"
                     placeholder="0.00"
                     value={sendAmount}
-                    onChange={(e) => setSendAmount(e.target.value)}
+                    onChange={(e) => {
+                      setSendAmount(e.target.value);
+                      setSendError(null);
+                    }}
                     className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none"
                   />
                 </div>
@@ -195,14 +199,36 @@ export default function PortfolioPage() {
                     type="text"
                     placeholder="0x... or 0.0.x"
                     value={sendTo}
-                    onChange={(e) => setSendTo(e.target.value)}
+                    onChange={(e) => {
+                      setSendTo(e.target.value);
+                      setSendError(null);
+                    }}
                     className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono"
                   />
                 </div>
+                {sendError && (
+                  <p className="text-sm text-red-400 bg-red-500/10 rounded-lg p-2 border border-red-500/20">
+                    {sendError}
+                  </p>
+                )}
                 <button
                   type="button"
+                  onClick={() => {
+                    setSendError(null);
+                    const amt = sendAmount.trim();
+                    const to = sendTo.trim();
+                    if (!amt || !to) {
+                      setSendError('Please enter a valid amount and recipient address.');
+                      return;
+                    }
+                    if (Number.isNaN(Number(amt)) || Number(amt) <= 0) {
+                      setSendError('Please enter a positive amount.');
+                      return;
+                    }
+                    // TODO: wire to actual send transaction
+                    setSendError('Send is not yet connected to the network. Coming soon.');
+                  }}
                   className="w-full rounded-lg bg-red-600 hover:bg-red-500 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
-                  disabled={!sendAmount || !sendTo}
                 >
                   Send
                 </button>

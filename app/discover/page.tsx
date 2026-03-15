@@ -310,7 +310,15 @@ export default function DiscoverPage() {
             </div>
 
             {status && (
-              <p className="mb-3 text-xs text-neutral-400 whitespace-pre-wrap">
+              <p
+                className={`mb-3 text-sm whitespace-pre-wrap rounded-lg p-2 ${
+                  status.startsWith('Funding submitted') || status.startsWith('Submitting')
+                    ? 'text-neutral-300 bg-neutral-800/80'
+                    : status.startsWith('Enter a valid') || status.startsWith('Please log in') || status.includes('failed') || status.includes('revert')
+                      ? 'text-red-300 bg-red-500/10 border border-red-500/20'
+                      : 'text-neutral-400 bg-neutral-800/60'
+                }`}
+              >
                 {status}
               </p>
             )}

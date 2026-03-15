@@ -206,6 +206,11 @@ export default function CreatorDashboard() {
     setTreasuryStatus(null);
     try {
       const token = await getAccessToken();
+      if (!token) {
+        setTreasuryStatus('Please log in to run a distribution.');
+        setIsDistributing(false);
+        return;
+      }
       const response = await fetch('/api/distribute', {
         method: 'POST',
         headers: {
@@ -221,9 +226,14 @@ export default function CreatorDashboard() {
         `Distribution succeeded. Status: ${data.status}, Tx: ${data.transactionId}`
       );
     } catch (error: unknown) {
-      setTreasuryStatus(
-        error instanceof Error ? error.message : 'Distribution failed.'
-      );
+      const msg = error instanceof Error ? error.message : 'Distribution failed.';
+      const friendly =
+        msg.includes('reverted') || msg.includes('insufficient balance')
+          ? msg
+          : msg.includes('CONTRACT_REVERT')
+            ? 'The distribution was reverted by the contract. The treasury may have insufficient balance or contract conditions were not met. Please check your treasury balance and try again.'
+            : msg;
+      setTreasuryStatus(friendly);
     } finally {
       setIsDistributing(false);
     }
@@ -240,7 +250,7 @@ export default function CreatorDashboard() {
             >
               <span aria-hidden>←</span> Home
             </Link>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-2">
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold mt-5">
               Creator Dashboard
             </h1>
           </div>
@@ -343,11 +353,11 @@ export default function CreatorDashboard() {
           </div>
         </section>
 
-        {/* Creator Treasury Controls */}
+        {/* Reward Distribution */}
         <section className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-neutral-800">
             <h2 className="font-heading text-lg font-semibold text-white">
-              Creator Treasury Controls
+              Reward Distribution
             </h2>
             <p className="text-sm text-neutral-400 mt-1 max-w-xl">
               Trigger distribution of on-chain yield to your supporters. This calls the SwiftFund treasury contract on Hedera.
@@ -386,7 +396,13 @@ export default function CreatorDashboard() {
               />
             </div>
             {treasuryStatus && (
-              <p className="mt-4 text-xs text-neutral-300 whitespace-pre-wrap bg-neutral-950/80 rounded-lg p-3 border border-neutral-800">
+              <p
+                className={`mt-4 text-sm whitespace-pre-wrap rounded-lg p-3 border ${
+                  treasuryStatus.startsWith('Distribution succeeded')
+                    ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                    : 'text-red-300 bg-red-500/10 border-red-500/30'
+                }`}
+              >
                 {treasuryStatus}
               </p>
             )}

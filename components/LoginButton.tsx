@@ -11,42 +11,56 @@ function getProfileStorageKey(userId: string | undefined): string | null {
   return userId ? `${PROFILE_IMAGE_KEY_PREFIX}${userId}` : null;
 }
 
-/** Resize image to a square of at most PROFILE_IMAGE_MAX_SIZE, center-cropped; returns a new File. */
+/** Resize image to a square of at most PROFILE_IMAGE_MAX_SIZE, center-cropped; returns a new File. Handles edge cases so different sizes/orientations do not crash. */
 function resizeImageFile(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const dim = Math.min(img.naturalWidth, img.naturalHeight, PROFILE_IMAGE_MAX_SIZE);
-      const canvas = document.createElement('canvas');
-      canvas.width = dim;
-      canvas.height = dim;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(file);
-        return;
+  return new Promise((resolve) => {
+    let url: string | null = null;
+    const cleanup = () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+        url = null;
       }
-      const sx = (img.naturalWidth - dim) / 2;
-      const sy = (img.naturalHeight - dim) / 2;
-      ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg') || 'avatar.jpg', { type: 'image/jpeg' }));
-          } else {
-            resolve(file);
-          }
-        },
-        'image/jpeg',
-        0.88
-      );
     };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
+    try {
+      url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        cleanup();
+        const w = img.naturalWidth || 1;
+        const h = img.naturalHeight || 1;
+        const dim = Math.max(1, Math.min(w, h, PROFILE_IMAGE_MAX_SIZE));
+        const canvas = document.createElement('canvas');
+        canvas.width = dim;
+        canvas.height = dim;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+        const sx = (w - dim) / 2;
+        const sy = (h - dim) / 2;
+        ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg') || 'avatar.jpg', { type: 'image/jpeg' }));
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          0.88
+        );
+      };
+      img.onerror = () => {
+        cleanup();
+        resolve(file);
+      };
+      img.src = url;
+    } catch {
+      cleanup();
       resolve(file);
-    };
-    img.src = url;
+    }
   });
 }
 
@@ -183,20 +197,26 @@ export default function LoginButton() {
           setProfileImageUrl(url);
         };
         img.onload = () => {
-          const dim = Math.min(img.naturalWidth, img.naturalHeight, PROFILE_IMAGE_MAX_SIZE);
-          const canvas = document.createElement('canvas');
-          canvas.width = dim;
-          canvas.height = dim;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
+          try {
+            const w = img.naturalWidth || 1;
+            const h = img.naturalHeight || 1;
+            const dim = Math.max(1, Math.min(w, h, PROFILE_IMAGE_MAX_SIZE));
+            const canvas = document.createElement('canvas');
+            canvas.width = dim;
+            canvas.height = dim;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              saveAndSet(dataUrl);
+              setUploadingAvatar(false);
+              return;
+            }
+            const sx = (w - dim) / 2;
+            const sy = (h - dim) / 2;
+            ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
+            saveAndSet(canvas.toDataURL('image/jpeg', 0.85));
+          } catch {
             saveAndSet(dataUrl);
-            setUploadingAvatar(false);
-            return;
           }
-          const sx = (img.naturalWidth - dim) / 2;
-          const sy = (img.naturalHeight - dim) / 2;
-          ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
-          saveAndSet(canvas.toDataURL('image/jpeg', 0.85));
           setUploadingAvatar(false);
         };
         img.onerror = () => {
@@ -248,7 +268,8 @@ export default function LoginButton() {
                 <img
                   src={profileImageUrl}
                   alt="Profile"
-                  className="h-full w-full object-cover object-center aspect-square"
+                  className="h-full w-full object-cover object-center aspect-square min-w-0 min-h-0"
+                  onError={() => setProfileImageUrl(null)}
                 />
               ) : (
                 <svg

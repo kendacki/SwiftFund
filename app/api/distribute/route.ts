@@ -23,8 +23,19 @@ export async function POST(req: Request) {
       transactionId,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Smart contract execution or verification failed';
-    console.error(message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    const raw = error instanceof Error ? error.message : 'Smart contract execution or verification failed';
+    const isContractRevert =
+      raw.includes('CONTRACT_REVERT_EXECUTED') ||
+      raw.includes('contained error status') ||
+      raw.includes('REVERT');
+    const userMessage = isContractRevert
+      ? 'The distribution was reverted by the contract. The treasury may have insufficient balance, or the contract conditions were not met. Please check your treasury balance and try again.'
+      : raw.includes('Unauthorized') || raw.includes('verification failed')
+        ? 'Please log in again and try again.'
+        : raw.includes('TREASURY_CONTRACT_ID') || raw.includes('not set')
+          ? 'Service is not fully configured. Please try again later.'
+          : raw;
+    console.error(raw);
+    return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 }

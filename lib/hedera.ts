@@ -53,9 +53,14 @@ export async function executeDistribution(amountPerFan: number) {
 
   const submitExecTx = await tx.execute(client);
   const receipt = await submitExecTx.getReceipt(client);
+  const statusStr = receipt.status.toString();
+
+  if (statusStr === 'CONTRACT_REVERT_EXECUTED' || statusStr.includes('REVERT')) {
+    throw new Error('CONTRACT_REVERT_EXECUTED');
+  }
 
   return {
-    status: receipt.status.toString(),
+    status: statusStr,
     transactionId: submitExecTx.transactionId.toString(),
   };
 }
