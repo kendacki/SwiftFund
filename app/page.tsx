@@ -245,14 +245,9 @@ export default function LandingPage() {
               className="flex-shrink-0 w-full md:w-72 lg:w-80 flex items-center justify-center min-h-[200px]"
             >
               <img
-                src="/images/content-creators-vector.png"
+                src="/images/content-creators-vector.svg"
                 alt="Content creators: video, music, and food creators with community engagement"
                 className="w-full max-w-sm h-auto object-contain"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.onerror = null;
-                  target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80';
-                }}
               />
             </motion.div>
           </div>

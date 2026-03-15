@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" aria-hidden="true">
+  <!-- Video player -->
+  <rect x="80" y="20" width="240" height="140" rx="8" fill="#dc2626"/>
+  <path d="M185 95l40 25-40 25V95z" fill="white"/>
+  <rect x="80" y="168" width="240" height="8" rx="4" fill="#404040"/>
+  <circle cx="100" cy="172" r="4" fill="#dc2626"/>
+  <!-- Creator 1 - musician -->
+  <circle cx="100" cy="240" r="28" fill="#a16207"/>
+  <circle cx="100" cy="232" r="12" fill="#fef3c7"/>
+  <rect x="70" y="268" width="60" height="24" rx="4" fill="#78716c"/>
+  <path d="M55 230 L85 210 L85 250 Z" fill="#a16207" stroke="#78716c" stroke-width="2"/>
+  <!-- Creator 2 - camera -->
+  <circle cx="200" cy="240" r="28" fill="#57534e"/>
+  <circle cx="200" cy="232" r="12" fill="#e7e5e4"/>
+  <rect x="170" y="268" width="60" height="24" rx="4" fill="#44403c"/>
+  <rect x="215" y="215" width="24" height="18" rx="2" fill="#1c1917"/>
+  <circle cx="227" cy="224" r="4" fill="#52525b"/>
+  <!-- Creator 3 - chef -->
+  <circle cx="300" cy="240" r="28" fill="#a16207"/>
+  <circle cx="300" cy="232" r="12" fill="#fef3c7"/>
+  <rect x="270" y="268" width="60" height="24" rx="4" fill="#78716c"/>
+  <path d="M315 225 L325 255 L305 255 Z" fill="#71717a"/>
+  <circle cx="310" cy="235" r="4" fill="#22c55e"/>
+  <circle cx="318" cy="245" r="3" fill="#eab308"/>
+  <circle cx="305" cy="248" r="3" fill="#dc2626"/>
+  <!-- Engagement icons -->
+  <circle cx="340" cy="60" r="18" fill="#dc2626"/>
+  <path d="M335 65l4 4 8-10" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="60" cy="80" r="14" fill="#dc2626"/>
+  <path d="M56 84l2 2 5-6" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>
