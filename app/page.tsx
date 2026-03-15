@@ -147,31 +147,46 @@ export default function LandingPage() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
           className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-4 sm:pt-6 mt-2 sm:mt-4 w-full max-w-4xl"
         >
-          <div className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.75 }}
+            className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
+          >
             <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">200ms</p>
             <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               Consensus Speed
             </p>
-          </div>
+          </motion.div>
           <div className="hidden sm:block w-px h-12 bg-neutral-800" />
-          <div className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.85 }}
+            className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
+          >
             <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">ERC-20</p>
             <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               EVM Compatible
             </p>
-          </div>
+          </motion.div>
           <div className="hidden sm:block w-px h-12 bg-neutral-800" />
-          <div className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.95 }}
+            className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
+          >
             <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">100%</p>
             <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
               On-Chain Oracle
             </p>
-          </div>
+          </motion.div>
         </motion.div>
         </main>
       </section>
@@ -181,29 +196,65 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
           <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
             <div className="flex-1 min-w-0">
-              <p className="font-heading text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2">
-                How it works
-              </p>
-              <h2 className="font-heading text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
-                Fund creators. Share in their success.
-              </h2>
-              <p className="font-heading text-xs sm:text-base text-neutral-400 leading-relaxed tracking-tight max-w-xl">
-                Creators list projects; backers fund them and earn a share of future revenue. Everything runs on Hedera—fast, low-cost, and transparent. Browse live projects, fund your favorites, and track rewards from one place.
-              </p>
-              <Link
-                href="/discover"
-                className="font-heading inline-flex items-center gap-2 mt-6 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 text-sm transition-colors"
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.45 }}
+                className="font-heading text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2"
               >
-                Discover projects
-              </Link>
+                How it works
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.5, delay: 0.08 }}
+                className="font-heading text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-3"
+              >
+                Fund creators. Share in their success.
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.5, delay: 0.14 }}
+                className="font-heading text-xs sm:text-base text-neutral-400 leading-relaxed tracking-tight max-w-xl"
+              >
+                Creators list projects; backers fund them and earn a share of future revenue. Everything runs on Hedera—fast, low-cost, and transparent. Browse live projects, fund your favorites, and track rewards from one place.
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.45, delay: 0.2 }}
+              >
+                <Link
+                  href="/discover"
+                  className="font-heading inline-flex items-center gap-2 mt-6 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 text-sm transition-colors"
+                >
+                  Discover projects
+                </Link>
+              </motion.div>
             </div>
-            <div className="flex-shrink-0 w-full md:w-72 lg:w-80 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="flex-shrink-0 w-full md:w-72 lg:w-80 flex items-center justify-center min-h-[200px]"
+            >
               <img
                 src="/images/content-creators-vector.png"
                 alt="Content creators: video, music, and food creators with community engagement"
                 className="w-full max-w-sm h-auto object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.onerror = null;
+                  target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80';
+                }}
               />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -235,8 +286,12 @@ export default function LandingPage() {
             {FAQ_ITEMS.map((item, index) => {
               const isOpen = faqOpenId === item.id;
               return (
-                <div
+                <motion.div
                   key={item.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-20px' }}
+                  transition={{ duration: 0.35, delay: index * 0.05 }}
                   className="relative"
                   style={{ marginTop: index === 0 ? 0 : '-8px' }}
                 >
@@ -276,7 +331,7 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </button>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -284,11 +339,17 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full bg-red-600 py-4 sm:py-5">
+      <motion.footer
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full bg-red-600 py-4 sm:py-5"
+      >
         <p className="font-heading text-white text-center text-sm sm:text-base tracking-tight w-full max-w-7xl mx-auto px-4">
           © 2026 SwiftFunz. All Rights Reserved.
         </p>
-      </footer>
+      </motion.footer>
     </div>
   );
 }
