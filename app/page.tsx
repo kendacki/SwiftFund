@@ -94,13 +94,13 @@ export default function LandingPage() {
           <button
             type="button"
             onClick={login}
-            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg bg-white text-neutral-900 font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base hover:bg-neutral-200 transition-colors"
+            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg bg-white text-neutral-900 font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base min-w-[10rem] sm:min-w-[11rem] hover:bg-neutral-200 transition-colors"
           >
             Get started
           </button>
           <Link
             href="/discover"
-            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-900/80 text-white font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base hover:bg-neutral-800 hover:border-neutral-500 transition-colors"
+            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-900/80 text-white font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base min-w-[10rem] sm:min-w-[11rem] hover:bg-neutral-800 hover:border-neutral-500 transition-colors"
           >
             Discover
           </Link>
