@@ -5,3 +5,45 @@
 body {
   font-family: 'Verdana', sans-serif;
 }
+
+/* Subtle black/white vortex background: CSS-only, GPU-accelerated, no layout impact */
+@keyframes vortex-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vortex-bg {
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  left: -50%;
+  top: -50%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #0a0a0a 0deg,
+    #262626 36deg,
+    #0a0a0a 72deg,
+    #171717 108deg,
+    #0a0a0a 144deg,
+    #262626 180deg,
+    #0a0a0a 216deg,
+    #171717 252deg,
+    #0a0a0a 288deg,
+    #262626 324deg,
+    #0a0a0a 360deg
+  );
+  animation: vortex-spin 50s linear infinite;
+  will-change: transform;
+  pointer-events: none;
+  opacity: 0.28;
+}
+
+.vortex-bg-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
