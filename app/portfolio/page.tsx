@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 const SWIND_TOKEN_ID = process.env.NEXT_PUBLIC_SWIND_TOKEN_ID ?? '—';
 
@@ -29,6 +29,7 @@ const MOCK_TXS: TxRow[] = [
 
 export default function PortfolioPage() {
   const { user } = usePrivy();
+  const { wallets } = useWallets();
   const [address, setAddress] = useState<string | null>(null);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -37,12 +38,53 @@ export default function PortfolioPage() {
   const [sendAmount, setSendAmount] = useState('');
   const [sendTo, setSendTo] = useState('');
   const [sendError, setSendError] = useState<string | null>(null);
+  const [hbarBalance, setHbarBalance] = useState<string | null>(null);
 
   useEffect(() => {
+    const primaryWallet = wallets[0];
+    if (primaryWallet?.address) {
+      setAddress(primaryWallet.address);
+      return;
+    }
     if (user?.wallet?.address) {
       setAddress(user.wallet.address);
     }
-  }, [user]);
+  }, [wallets, user]);
+
+  // Fetch live HBAR balance from Hedera testnet mirror node whenever address changes.
+  useEffect(() => {
+    if (!address) return;
+
+    const controller = new AbortController();
+
+    const fetchBalance = async () => {
+      try {
+        const res = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/accounts?account.evm_address=${address.toLowerCase()}`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const account = Array.isArray(data?.accounts) ? data.accounts[0] : null;
+        const tinybar = account?.balance?.balance;
+        if (typeof tinybar !== 'number') return;
+        const hbar = tinybar / 1e8;
+        setHbarBalance(
+          hbar.toLocaleString(undefined, {
+            maximumFractionDigits: 8,
+          })
+        );
+      } catch (err) {
+        if ((err as any)?.name === 'AbortError') return;
+        // On error, fall back to placeholder.
+        setHbarBalance(null);
+      }
+    };
+
+    fetchBalance();
+
+    return () => controller.abort();
+  }, [address]);
 
   const copyAddress = () => {
     if (!address) return;
@@ -142,8 +184,14 @@ export default function PortfolioPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-heading text-sm font-semibold text-white tracking-tight">{token.amount}</p>
-                            <p className="font-heading text-xs text-neutral-500 tracking-tight">{token.equivalent}</p>
+                        <p className="font-heading text-sm font-semibold text-white tracking-tight">
+                          {token.symbol === 'HBAR' && hbarBalance !== null
+                            ? `${hbarBalance} HBAR`
+                            : token.amount}
+                        </p>
+                        <p className="font-heading text-xs text-neutral-500 tracking-tight">
+                          {token.equivalent}
+                        </p>
                       </div>
                     </div>
                   ))}
