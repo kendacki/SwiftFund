@@ -153,12 +153,12 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="w-full max-w-4xl mt-4 sm:mt-6"
         >
-          <div className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-4 sm:pt-6 w-full divide-y divide-neutral-800 sm:divide-y-0">
+          <div className="flex flex-row flex-nowrap sm:flex-wrap items-center justify-center gap-0 sm:gap-8 border-t border-neutral-800/50 pt-4 sm:pt-6 w-full divide-x divide-neutral-800">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.7 }}
-              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] py-5 sm:py-0 pt-0 sm:pt-0"
+              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] px-5 sm:px-6 py-2"
             >
               <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 200ms
@@ -167,12 +167,11 @@ export default function LandingPage() {
                 Consensus Speed
               </p>
             </motion.div>
-            <div className="hidden sm:block w-px h-12 bg-neutral-800" />
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.8 }}
-              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] py-5 sm:py-0"
+              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] px-5 sm:px-6 py-2"
             >
               <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 ERC-20
@@ -181,12 +180,11 @@ export default function LandingPage() {
                 EVM Compatible
               </p>
             </motion.div>
-            <div className="hidden sm:block w-px h-12 bg-neutral-800" />
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.9 }}
-              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] py-5 sm:py-0"
+              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] px-5 sm:px-6 py-2"
             >
               <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 100%
