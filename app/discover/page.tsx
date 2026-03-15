@@ -10,7 +10,7 @@ import ProjectCard from '@/components/ProjectCard';
 import type { ProjectCardProps } from '@/components/ProjectCard';
 import type { Project } from '@/lib/projects';
 
-type FilterKey = 'all' | 'trending' | 'endingSoon';
+type FilterKey = 'all' | 'trending' | 'endingSoon' | 'completed';
 
 type ProjectCardData = Omit<ProjectCardProps, 'onFundClick'>;
 
@@ -120,14 +120,24 @@ export default function DiscoverPage() {
     if (activeFilter === 'all') return allProjects;
 
     if (activeFilter === 'trending') {
+      // Projects actively gaining traction but not yet fully funded.
       const list = allProjects.filter(
-        (p) => p.progressPercent >= 60 && p.progressPercent < 90
+        (p) => p.progressPercent >= 60 && p.progressPercent < 100
       );
       return list.length > 0 ? list : allProjects;
     }
 
     if (activeFilter === 'endingSoon') {
-      const list = allProjects.filter((p) => p.progressPercent >= 90);
+      // High-progress campaigns approaching completion.
+      const list = allProjects.filter(
+        (p) => p.progressPercent >= 90 && p.progressPercent < 100
+      );
+      return list.length > 0 ? list : allProjects;
+    }
+
+    if (activeFilter === 'completed') {
+      // Only fully funded projects.
+      const list = allProjects.filter((p) => p.progressPercent >= 100);
       return list.length > 0 ? list : allProjects;
     }
 
@@ -198,6 +208,7 @@ export default function DiscoverPage() {
     { key: 'all', label: 'All Projects' },
     { key: 'trending', label: 'Trending' },
     { key: 'endingSoon', label: 'Ending Soon' },
+    { key: 'completed', label: 'Completed' },
   ];
 
   return (
