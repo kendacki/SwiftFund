@@ -159,7 +159,7 @@ export default function LandingPage() {
               transition={{ duration: 0.45, delay: 0.7 }}
               className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
             >
-              <p className="font-heading text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
+              <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 200ms
               </p>
               <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
@@ -173,7 +173,7 @@ export default function LandingPage() {
               transition={{ duration: 0.45, delay: 0.8 }}
               className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
             >
-              <p className="font-heading text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
+              <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 ERC-20
               </p>
               <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
@@ -187,7 +187,7 @@ export default function LandingPage() {
               transition={{ duration: 0.45, delay: 0.9 }}
               className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
             >
-              <p className="font-heading text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
+              <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 100%
               </p>
               <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
