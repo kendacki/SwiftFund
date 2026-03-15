@@ -33,7 +33,7 @@ function rowToProject(r: Row): Project {
     status: r.status as ProjectStatus,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    tags: r.tags ?? ['all'],
+    tags: (r.tags ?? ['all']) as Project['tags'],
     earningsDistributionPercent: r.earnings_distribution_percent ?? undefined,
     accountInfoPdfUrl: r.account_info_pdf_url ?? undefined,
   };
