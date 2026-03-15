@@ -8,7 +8,7 @@ import {
   SWIFT_FUND_TREASURY_ABI,
 } from '@/constants/contracts';
 
-export const CONTRACT_ADDRESS = '0x87Cd9fEeC4962609C1fA4e81058010432b5B5F8F';
+export const CONTRACT_ADDRESS = '0x1Af13d4Bcf11a6E872d7E0DB3a84a8d6c93EdF8C';
 export const SWIND_TOKEN_ID = '0.0.8216024';
 /** EVM address for HTS token 0.0.8216024 (hex of 8216024 = 0x7d5d98). */
 export const SWIND_EVM_ADDRESS = '0x00000000000000000000000000000000007d5d98';

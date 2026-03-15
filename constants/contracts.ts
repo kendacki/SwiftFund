@@ -1,10 +1,10 @@
 /** ABI synced from artifacts by scripts/sync-abi.js. */
-export const DEPLOYED_TREASURY_CONTRACT_ID = '0.0.8238056';
+export const DEPLOYED_TREASURY_CONTRACT_ID = '0.0.8238617';
 
 export const TREASURY_CONTRACT_ID =
   process.env.NEXT_PUBLIC_TREASURY_CONTRACT_ID ?? DEPLOYED_TREASURY_CONTRACT_ID;
 
-export const DEPLOYED_TREASURY_EVM_ADDRESS = '0x87Cd9fEeC4962609C1fA4e81058010432b5B5F8F';
+export const DEPLOYED_TREASURY_EVM_ADDRESS = '0x1Af13d4Bcf11a6E872d7E0DB3a84a8d6c93EdF8C';
 
 export const TREASURY_EVM_ADDRESS =
   process.env.NEXT_PUBLIC_TREASURY_EVM_ADDRESS ?? DEPLOYED_TREASURY_EVM_ADDRESS;
@@ -17,7 +17,17 @@ export const SWIFT_FUND_TREASURY_ABI = [
   },
   {
     "inputs": [],
+    "name": "BatchTooLarge",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidRecipient",
     "type": "error"
   },
   {
@@ -33,6 +43,11 @@ export const SWIFT_FUND_TREASURY_ABI = [
   {
     "inputs": [],
     "name": "OnlyOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuard",
     "type": "error"
   },
   {

@@ -11,8 +11,8 @@ const root = join(__dirname, "..");
 const artifactPath = join(root, "artifacts/contracts/SwiftFundTreasury.sol/SwiftFundTreasury.json");
 const outPath = join(root, "constants/contracts.ts");
 
-const DEPLOYED_EVM_ADDRESS = "0x87Cd9fEeC4962609C1fA4e81058010432b5B5F8F";
-const DEPLOYED_CONTRACT_ID = "0.0.8238056";
+const DEPLOYED_EVM_ADDRESS = "0x1Af13d4Bcf11a6E872d7E0DB3a84a8d6c93EdF8C";
+const DEPLOYED_CONTRACT_ID = "0.0.8238617";
 
 async function main() {
   const artifact = JSON.parse(await readFile(artifactPath, "utf8"));
