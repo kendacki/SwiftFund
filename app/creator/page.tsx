@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { usePrivy } from '@privy-io/react-auth';
 import DashboardCard from '@/components/DashboardCard';
 import type { Project, ProjectStatus } from '@/lib/projects';
@@ -265,12 +266,22 @@ export default function CreatorDashboard() {
               <span aria-hidden>←</span> Home
             </Link>
             <div className="mt-5 mb-6 sm:mb-8 space-y-3 text-center sm:text-left">
-              <h1 className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 0.61, 0.36, 1] }}
+                className="font-heading text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white"
+              >
                 Creator Dashboard
-              </h1>
-              <p className="font-heading text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0 tracking-tight">
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+                className="font-heading text-xs sm:text-base text-neutral-400 max-w-2xl mx-auto sm:mx-0 tracking-tight"
+              >
                 Manage your projects and distribute yield to your supporters.
-              </p>
+              </motion.p>
             </div>
           </div>
           <Link
