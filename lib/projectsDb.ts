@@ -94,9 +94,10 @@ export async function updateProjectStatus(
   creatorId?: string
 ): Promise<Project | null> {
   const supabase = getSupabase();
+  const updatePayload = { status, updated_at: new Date().toISOString() };
   let query = supabase
     .from('projects')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update(updatePayload as never)
     .eq('id', projectId);
   if (creatorId) {
     query = query.eq('creator_id', creatorId);
@@ -112,9 +113,10 @@ export async function incrementAmountRaised(projectId: string, amount: number): 
   const { data: row } = await supabase.from('projects').select('amount_raised').eq('id', projectId).single();
   if (!row) return;
   const current = Number((row as { amount_raised: number }).amount_raised) || 0;
+  const updatePayload = { amount_raised: current + amount, updated_at: new Date().toISOString() };
   const { error } = await supabase
     .from('projects')
-    .update({ amount_raised: current + amount, updated_at: new Date().toISOString() })
+    .update(updatePayload as never)
     .eq('id', projectId);
   if (error) {
     console.error('incrementAmountRaised error:', error);
