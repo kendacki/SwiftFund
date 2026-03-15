@@ -63,7 +63,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-neutral-100 font-sans selection:bg-red-500/30 overflow-x-hidden relative">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-red-500/30 overflow-x-hidden relative">
       <div className="vortex-bg-wrapper" aria-hidden>
         <div className="vortex-bg" />
       </div>
@@ -129,7 +129,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.55 }}
-          className="flex flex-wrap gap-3 sm:gap-4 justify-center mb-6 sm:mb-8"
+          className="flex flex-wrap gap-3 sm:gap-4 justify-center mb-4 sm:mb-6"
         >
           <button
             type="button"
@@ -140,62 +140,10 @@ export default function LandingPage() {
           </button>
           <Link
             href="/discover"
-            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/60 bg-red-950/20 text-red-200 font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base min-w-[10rem] sm:min-w-[11rem] hover:bg-red-900/60 hover:border-red-400 transition-colors"
+            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-900/80 text-white font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base min-w-[10rem] sm:min-w-[11rem] hover:bg-neutral-800 hover:border-neutral-500 transition-colors"
           >
             Discover
           </Link>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.65 }}
-          className="relative w-full max-w-4xl mx-auto mt-4 sm:mt-6"
-        >
-          {/* Luminous stat list */}
-          <div className="relative z-20 text-center space-y-1 sm:space-y-1.5 mb-6 sm:mb-8">
-            <p className="font-heading text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-red-400 drop-shadow-[0_0_20px_rgba(248,113,113,0.9)]">
-              200ms Consensus Speed
-            </p>
-            <p className="font-heading text-sm sm:text-base md:text-lg text-red-300/90 tracking-wide">
-              ERC-20
-            </p>
-            <p className="font-heading text-sm sm:text-base md:text-lg text-red-300/90 tracking-wide">
-              EVM Compatible
-            </p>
-            <p className="font-heading text-sm sm:text-base md:text-lg text-red-300/90 tracking-wide">
-              100%
-            </p>
-            <p className="font-heading text-sm sm:text-base md:text-lg text-red-300/90 tracking-wide">
-              On-Chain Oracle
-            </p>
-          </div>
-
-          {/* Subtle data particle streams around the text */}
-          <div className="pointer-events-none absolute inset-0 z-10">
-            <div className="absolute -top-4 sm:-top-6 left-6 sm:left-16 w-24 sm:w-32 h-24 sm:h-32 bg-[radial-gradient(circle_at_center,rgba(248,113,113,0.35),transparent_70%)] blur-md opacity-70 animate-pulse" />
-            <div className="absolute top-4 sm:top-8 right-4 sm:right-20 w-20 sm:w-28 h-20 sm:h-28 bg-[radial-gradient(circle_at_center,rgba(248,113,113,0.25),transparent_70%)] blur-md opacity-70 animate-[ping_3s_linear_infinite]" />
-            <div className="absolute inset-x-10 sm:inset-x-24 top-1/2 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent opacity-60" />
-          </div>
-
-          {/* Powerclipped globe background */}
-          <div
-            className="relative z-0 mt-2 sm:mt-0 h-[360px] sm:h-[460px] md:h-[520px] w-full overflow-hidden rounded-[999px] bg-gradient-to-b from-transparent via-red-950/40 to-black/95 border border-red-900/40 shadow-[0_0_140px_rgba(248,113,113,0.45)] mx-auto"
-            aria-hidden
-          >
-            <img
-              src="/images/network-globe.png"
-              alt=""
-              className="absolute left-1/2 top-[35%] -translate-x-1/2 -translate-y-1/2 w-[180%] h-auto object-cover object-center opacity-90"
-              loading="lazy"
-              decoding="async"
-              style={{ filter: 'drop-shadow(0 0 40px rgba(248,113,113,0.9))' }}
-            />
-            {/* Gradient mask to softly blend top into black */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-            {/* Extra vignette to hide tray base and edges */}
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black via-black/70 to-transparent" />
-          </div>
         </motion.div>
         </main>
       </section>
