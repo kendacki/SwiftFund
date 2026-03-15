@@ -390,7 +390,7 @@ export default function CreatorDashboard() {
               Reward Distribution
             </h2>
             <p className="font-heading text-sm text-neutral-400 mt-1 max-w-xl tracking-tight">
-              Trigger distribution of on-chain yield to your supporters. This calls the SwiftFund treasury contract on Hedera. You cannot distribute less than the total amount your community has funded across your projects.
+              Send rewards from your treasury to your backers. Payouts run on Hedera and are secure and transparent. The amount you distribute must be at least equal to what your community has funded so far across your projects.
             </p>
           </div>
           <div className="p-4 sm:p-6">
