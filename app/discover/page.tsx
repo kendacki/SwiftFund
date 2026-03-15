@@ -119,17 +119,19 @@ export default function DiscoverPage() {
   const filteredProjects = useMemo(() => {
     if (activeFilter === 'all') return allProjects;
 
-    const tagged = allProjects.filter((p) =>
-      (p.tags ?? ['all']).includes(activeFilter)
-    );
-
-    // If no projects are explicitly tagged for this filter yet,
-    // fall back to showing all projects so the grid never appears empty.
-    if (tagged.length === 0) {
-      return allProjects;
+    if (activeFilter === 'trending') {
+      const list = allProjects.filter(
+        (p) => p.progressPercent >= 60 && p.progressPercent < 90
+      );
+      return list.length > 0 ? list : allProjects;
     }
 
-    return tagged;
+    if (activeFilter === 'endingSoon') {
+      const list = allProjects.filter((p) => p.progressPercent >= 90);
+      return list.length > 0 ? list : allProjects;
+    }
+
+    return allProjects;
   }, [activeFilter, allProjects]);
 
   const selectedProject = useMemo(
