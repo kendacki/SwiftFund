@@ -24,10 +24,9 @@ function MenuGridIcon({ className }: { className?: string }) {
 }
 
 const SUBPAGE_LINKS = [
-  { href: '/', label: 'Home' },
+  { href: '/creator', label: 'Dashboard' },
   { href: '/discover', label: 'Discover' },
   { href: '/portfolio', label: 'Wallet' },
-  { href: '/creator', label: 'Dashboard' },
   { href: '/faq', label: 'FAQ' },
 ];
 
