@@ -285,7 +285,13 @@ export default function CreatorDashboard() {
       <div className="max-w-4xl mx-auto space-y-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="mb-6 sm:mb-8 space-y-3 text-center sm:text-left">
+            <Link
+              href="/portfolio"
+              className="text-sm text-neutral-400 hover:text-white transition-colors inline-flex items-center gap-1"
+            >
+              <span aria-hidden>←</span> Home
+            </Link>
+            <div className="mt-5 mb-6 sm:mb-8 space-y-3 text-center sm:text-left">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

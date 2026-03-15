@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { usePrivy } from '@privy-io/react-auth';
 
 const SWIND_TOKEN_ID = process.env.NEXT_PUBLIC_SWIND_TOKEN_ID ?? '—';
@@ -59,15 +58,6 @@ export default function PortfolioPage() {
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <Link
-            href={address ? '/creator' : '/'}
-            className="text-sm text-neutral-400 hover:text-white transition-colors inline-flex items-center gap-1"
-          >
-            <span aria-hidden>←</span> Home
-          </Link>
-        </div>
-
         {!address ? (
           <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-6 text-center">
             <p className="font-heading text-neutral-400 tracking-tight">Connect your wallet to view your portfolio.</p>
