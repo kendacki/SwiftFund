@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrivyClient } from '@/lib/privy';
 import { executeDistribution } from '@/lib/hedera';
 import { getProjects } from '@/lib/projectsDb';
+import { logDisburse } from '@/lib/creatorActivityDb';
 
 const DEFAULT_DISTRIBUTION_AMOUNT = 136880;
 
@@ -45,6 +46,12 @@ export async function POST(req: Request) {
     }
 
     const { status, transactionId } = await executeDistribution(DEFAULT_DISTRIBUTION_AMOUNT);
+    const amountToLog = amountUsd ?? totalFunded ?? DEFAULT_DISTRIBUTION_AMOUNT;
+    try {
+      await logDisburse(userId, amountToLog);
+    } catch (e) {
+      console.error('Failed to log disburse activity:', e);
+    }
 
     return NextResponse.json({
       success: true,

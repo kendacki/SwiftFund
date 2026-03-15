@@ -31,6 +31,25 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['projects']['Insert']>;
       };
+      creator_activity: {
+        Row: {
+          id: string;
+          creator_id: string;
+          type: string;
+          amount: number;
+          project_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          creator_id: string;
+          type: string;
+          amount: number;
+          project_id?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['creator_activity']['Insert']>;
+      };
       /** Placeholder definition so TypeScript has a type for funding_requests. Create this table in Supabase if you use it. */
       funding_requests: {
         Row: { id: string; [key: string]: Json };

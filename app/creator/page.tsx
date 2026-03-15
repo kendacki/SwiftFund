@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePrivy } from '@privy-io/react-auth';
 import DashboardCard from '@/components/DashboardCard';
+import CreatorChart from '@/components/CreatorChart';
 import type { Project, ProjectStatus } from '@/lib/projects';
+import type { ChartPoint } from '@/components/CreatorChart';
 import { PROJECT_STATUS_LABEL } from '@/lib/projects';
 
 function SpinnerIcon({ className }: { className?: string }) {
@@ -59,6 +61,28 @@ export default function CreatorDashboard() {
   const [formError, setFormError] = useState<string | null>(null);
   const [treasuryStatus, setTreasuryStatus] = useState<string | null>(null);
   const [isDistributing, setIsDistributing] = useState(false);
+  const [chartPoints, setChartPoints] = useState<ChartPoint[]>([]);
+  const [chartLoading, setChartLoading] = useState(true);
+
+  const loadChartData = async () => {
+    setChartLoading(true);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setChartPoints([]);
+        return;
+      }
+      const res = await fetch('/api/creator/chart', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setChartPoints(Array.isArray(data?.points) ? data.points : []);
+    } catch {
+      setChartPoints([]);
+    } finally {
+      setChartLoading(false);
+    }
+  };
 
   const loadMyProjects = async () => {
     setProjectsLoading(true);
@@ -82,6 +106,7 @@ export default function CreatorDashboard() {
 
   useEffect(() => {
     loadMyProjects();
+    loadChartData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -240,6 +265,7 @@ export default function CreatorDashboard() {
       setTreasuryStatus(
         `Distribution succeeded. Status: ${data.status}, Tx: ${data.transactionId}`
       );
+      loadChartData();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Distribution failed.';
       const friendly =
@@ -291,6 +317,9 @@ export default function CreatorDashboard() {
             Discover
           </Link>
         </div>
+
+        {/* Funding & Disbursements Chart */}
+        <CreatorChart points={chartPoints} loading={chartLoading} />
 
         {/* My Projects */}
         <section className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">

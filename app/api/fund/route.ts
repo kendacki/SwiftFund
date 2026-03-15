@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrivyClient } from '@/lib/privy';
 import { fundProject } from '@/lib/hedera';
 import { incrementAmountRaised } from '@/lib/projectsDb';
+import { logFund } from '@/lib/creatorActivityDb';
 
 export async function POST(req: Request) {
   try {
@@ -29,6 +30,11 @@ export async function POST(req: Request) {
       await incrementAmountRaised(projectId, amount);
     } catch (e) {
       console.error('Failed to update project amountRaised:', e);
+    }
+    try {
+      await logFund(projectId, amount);
+    } catch (e) {
+      console.error('Failed to log fund activity:', e);
     }
 
     return NextResponse.json({

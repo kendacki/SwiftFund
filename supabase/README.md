@@ -7,9 +7,12 @@ Projects (including drafts) and approvals are stored in Supabase so creators can
 1. Go to [supabase.com](https://supabase.com) and create a project.
 2. In **Settings → API**: copy the **Project URL** and the **service_role** key (not the anon key).
 
-## 2. Create the `projects` table
+## 2. Create tables
 
-In the Supabase dashboard, open **SQL Editor** and run the contents of `migrations/001_projects.sql`.
+In the Supabase dashboard, open **SQL Editor** and run the migrations in order:
+
+1. `migrations/001_projects.sql` – projects and approvals  
+2. `migrations/002_creator_activity.sql` – funding and disbursement events for the creator dashboard chart
 
 ## 3. Environment variables
 
