@@ -248,6 +248,10 @@ export default function LandingPage() {
                 src="/images/content-creators-vector.svg"
                 alt="Content creators: video, music, and food creators with community engagement"
                 className="w-full max-w-sm h-auto object-contain"
+                width={400}
+                height={300}
+                loading="lazy"
+                decoding="async"
               />
             </motion.div>
           </div>

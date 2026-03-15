@@ -40,6 +40,11 @@ export default function RootLayout({
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? '';
   return (
     <html lang="en" className={roboto.variable}>
+      <head>
+        <link rel="preconnect" href="https://auth.privy.io" />
+        <link rel="dns-prefetch" href="https://auth.privy.io" />
+        <link rel="dns-prefetch" href="https://www.freelogovectors.net" />
+      </head>
       <body className="bg-neutral-950 text-white font-[verdana] antialiased">
         <Providers appId={appId}>
           <AppNav />

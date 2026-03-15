@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { memo } from 'react';
 
 export interface ProjectCardStats {
   amountRaisedLabel: string;
@@ -19,7 +19,7 @@ export interface ProjectCardProps {
   onFundClick: (projectId: string) => void;
 }
 
-export default function ProjectCard({
+function ProjectCard({
   id,
   creatorName,
   handle,
@@ -108,3 +108,4 @@ export default function ProjectCard({
   );
 }
 
+export default memo(ProjectCard);

@@ -61,6 +61,8 @@ export default function AppNav() {
             className="h-6 w-auto shrink-0"
             width={24}
             height={24}
+            decoding="async"
+            fetchPriority="high"
           />
           <span className="font-heading text-lg sm:text-xl font-extrabold tracking-tight truncate text-white">
             SwiftFund
