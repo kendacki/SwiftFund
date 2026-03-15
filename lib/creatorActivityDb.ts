@@ -1,7 +1,10 @@
 import { getSupabase } from '@/lib/supabase';
 import { getProjectById } from '@/lib/projectsDb';
+import type { Database } from '@/lib/database.types';
 
 export type ActivityType = 'fund' | 'disburse';
+
+type CreatorActivityInsert = Database['public']['Tables']['creator_activity']['Insert'];
 
 /** Log a funding event (call after successful fund). */
 export async function logFund(projectId: string, amount: number): Promise<void> {
@@ -22,12 +25,16 @@ async function insertActivity(
   projectId: string | null
 ): Promise<void> {
   const supabase = getSupabase();
-  const { error } = await supabase.from('creator_activity').insert({
+  const row: CreatorActivityInsert = {
     creator_id: creatorId,
     type,
     amount,
-    project_id: projectId,
-  });
+    project_id: projectId ?? undefined,
+  };
+  const { error } = await supabase
+    .from('creator_activity')
+    // Type assertion: Supabase client can infer insert as never for custom Database types
+    .insert(row as never);
   if (error) console.error('creator_activity insert error:', error);
 }
 
