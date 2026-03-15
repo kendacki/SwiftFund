@@ -29,7 +29,8 @@ export default function LandingPage() {
       </div>
       <div className="absolute inset-0 z-[1] bg-[linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
 
-      <main className="relative z-10 flex flex-col items-center justify-center pt-4 sm:pt-6 md:pt-10 pb-16 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
+      <section className="relative z-10 w-full bg-neutral-900/30">
+        <main className="flex flex-col items-center justify-center pt-4 sm:pt-6 md:pt-10 pb-16 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,7 +133,8 @@ export default function LandingPage() {
             </p>
           </div>
         </motion.div>
-      </main>
+        </main>
+      </section>
 
       {/* Product section: about SwiftFund + Discover CTA */}
       <section className="relative z-10 w-full border-t border-neutral-800/50 bg-neutral-900/30">
