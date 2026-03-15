@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { usePrivy } from '@privy-io/react-auth';
 
 export default function LandingPage() {
-  const { authenticated, ready } = usePrivy();
+  const { authenticated, ready, login } = usePrivy();
   const router = useRouter();
 
   useEffect(() => {
@@ -79,10 +79,31 @@ export default function LandingPage() {
             delay: 0.5,
             ease: [0.22, 0.61, 0.36, 1],
           }}
-          className="font-heading text-base sm:text-lg md:text-xl text-neutral-400 mb-4 sm:mb-6 w-full max-w-4xl leading-relaxed tracking-tight"
+          className="font-heading text-base sm:text-lg md:text-xl text-neutral-400 mb-6 sm:mb-8 w-full max-w-4xl leading-relaxed tracking-tight"
         >
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.55 }}
+          className="flex flex-wrap gap-3 sm:gap-4 justify-center mb-6 sm:mb-8"
+        >
+          <button
+            type="button"
+            onClick={login}
+            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg bg-white text-neutral-900 font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base hover:bg-neutral-200 transition-colors"
+          >
+            Get started
+          </button>
+          <Link
+            href="/discover"
+            className="font-heading inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-900/80 text-white font-semibold px-5 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base hover:bg-neutral-800 hover:border-neutral-500 transition-colors"
+          >
+            Discover
+          </Link>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
@@ -112,6 +133,40 @@ export default function LandingPage() {
           </div>
         </motion.div>
       </main>
+
+      {/* Product section: about SwiftFund + Discover CTA */}
+      <section className="relative z-10 w-full border-t border-neutral-800/50 bg-neutral-900/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
+            <div className="flex-1 min-w-0">
+              <p className="font-heading text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2">
+                How it works
+              </p>
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
+                Fund creators. Share in their success.
+              </h2>
+              <p className="font-heading text-sm sm:text-base text-neutral-400 leading-relaxed tracking-tight max-w-xl">
+                Creators list projects; backers fund them and earn a share of future revenue. Everything runs on Hedera—fast, low-cost, and transparent. Browse live projects, fund your favorites, and track rewards from one place.
+              </p>
+              <Link
+                href="/discover"
+                className="font-heading inline-flex items-center gap-2 mt-6 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 text-sm transition-colors"
+              >
+                Discover projects
+              </Link>
+            </div>
+            <div className="flex-shrink-0 w-full md:w-72 lg:w-80">
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950">
+                <img
+                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80"
+                  alt="Community and creators collaborating"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
