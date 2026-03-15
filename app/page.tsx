@@ -35,7 +35,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-400 mb-3 sm:mb-4"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-400 mb-2 sm:mb-3"
         >
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -52,7 +52,7 @@ export default function LandingPage() {
             delay: 0.12,
             ease: [0.22, 0.61, 0.36, 1],
           }}
-          className="font-heading text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-3 sm:mb-4 leading-[1.1]"
+          className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-2 sm:mb-3 leading-[1.1]"
         >
           <motion.span
             initial={{ opacity: 0, y: 20 }}
@@ -80,7 +80,7 @@ export default function LandingPage() {
             delay: 0.5,
             ease: [0.22, 0.61, 0.36, 1],
           }}
-          className="font-heading text-base sm:text-lg md:text-xl text-neutral-400 mb-6 sm:mb-8 w-full max-w-4xl leading-relaxed tracking-tight"
+          className="font-heading text-sm sm:text-base md:text-lg text-neutral-400 mb-4 sm:mb-6 w-full max-w-4xl leading-relaxed tracking-tight"
         >
           Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
         </motion.p>
@@ -89,7 +89,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.55 }}
-          className="flex flex-wrap gap-3 sm:gap-4 justify-center mb-6 sm:mb-8"
+          className="flex flex-wrap gap-3 sm:gap-4 justify-center mb-4 sm:mb-6"
         >
           <button
             type="button"
