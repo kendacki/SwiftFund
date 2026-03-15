@@ -69,6 +69,7 @@ export default function LoginButton() {
   const [copied, setCopied] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Restore profile image: fetch from API (backend), fallback to localStorage cache
   useEffect(() => {
@@ -155,7 +156,6 @@ export default function LoginButton() {
       return;
     }
     const key = getProfileStorageKey(user.id);
-    e.target.value = '';
     setUploadError(null);
     setUploadingAvatar(true);
 
@@ -163,7 +163,6 @@ export default function LoginButton() {
       const token = await getAccessToken();
       if (!token) {
         setUploadError('Session expired. Please log in again.');
-        setUploadingAvatar(false);
         return;
       }
       const resizedFile = await resizeImageFile(file);
@@ -179,6 +178,7 @@ export default function LoginButton() {
         throw new Error(data?.error || `Upload failed (${res.status})`);
       }
       if (data?.url) {
+        setUploadError(null);
         const urlWithCacheBust = `${data.url}${data.url.includes('?') ? '&' : '?'}t=${Date.now()}`;
         setProfileImageUrl(urlWithCacheBust);
         if (key) {
@@ -195,6 +195,9 @@ export default function LoginButton() {
       console.error('Profile upload failed:', err);
     } finally {
       setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -265,6 +268,7 @@ export default function LoginButton() {
                   </label>
                   <label className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors ${uploadingAvatar ? 'bg-neutral-700 cursor-wait' : 'bg-neutral-800 hover:bg-neutral-700 cursor-pointer'}`}>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleProfileUpload}
