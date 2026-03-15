@@ -28,6 +28,7 @@ const MOCK_PROJECTS: ProjectCardData[] = [
       backersLabel: '1,240',
       timeLeftLabel: '4 Days',
     },
+    earningsDistributionPercent: 25,
   },
   {
     id: 'creator-2',
@@ -42,6 +43,7 @@ const MOCK_PROJECTS: ProjectCardData[] = [
       backersLabel: '540',
       timeLeftLabel: '9 Days',
     },
+    earningsDistributionPercent: 20,
   },
   {
     id: 'creator-3',
@@ -56,6 +58,7 @@ const MOCK_PROJECTS: ProjectCardData[] = [
       backersLabel: '2,015',
       timeLeftLabel: '36 Hours',
     },
+    earningsDistributionPercent: 30,
   },
 ];
 
@@ -75,6 +78,7 @@ function toCardProps(p: Project): ProjectCardData {
       backersLabel: '0',
       timeLeftLabel: '—',
     },
+    earningsDistributionPercent: p.earningsDistributionPercent,
   };
 }
 

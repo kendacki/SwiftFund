@@ -50,8 +50,10 @@ export default function CreatorDashboard() {
   const [formCreatorName, setFormCreatorName] = useState('');
   const [formHandle, setFormHandle] = useState('');
   const [formGoalAmount, setFormGoalAmount] = useState('');
+  const [formEarningsPercent, setFormEarningsPercent] = useState('');
   const [formImage, setFormImage] = useState<File | null>(null);
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
+  const [formAccountPdf, setFormAccountPdf] = useState<File | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [treasuryStatus, setTreasuryStatus] = useState<string | null>(null);
@@ -88,8 +90,10 @@ export default function CreatorDashboard() {
     setFormCreatorName('');
     setFormHandle('');
     setFormGoalAmount('');
+    setFormEarningsPercent('');
     setFormImage(null);
     setFormImagePreview(null);
+    setFormAccountPdf(null);
     setFormError(null);
     setCreateOpen(true);
   };
@@ -138,6 +142,14 @@ export default function CreatorDashboard() {
       formData.set('goalAmount', String(goal));
       formData.set('status', asDraft ? 'draft' : 'pending');
       if (formImage) formData.set('image', formImage);
+      const pct = formEarningsPercent.trim();
+      if (pct !== '') {
+        const num = Number(pct);
+        if (Number.isFinite(num) && num >= 0 && num <= 100) {
+          formData.set('earningsDistributionPercent', String(Math.round(num)));
+        }
+      }
+      if (formAccountPdf) formData.set('accountPdf', formAccountPdf);
 
       const res = await fetch('/api/projects', {
         method: 'POST',
@@ -211,12 +223,14 @@ export default function CreatorDashboard() {
         setIsDistributing(false);
         return;
       }
+      const totalFunded = projects.reduce((sum, p) => sum + (p.amountRaised ?? 0), 0);
       const response = await fetch('/api/distribute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({ amountUsd: totalFunded }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -360,7 +374,7 @@ export default function CreatorDashboard() {
               Reward Distribution
             </h2>
             <p className="font-heading text-sm text-neutral-400 mt-1 max-w-xl tracking-tight">
-              Trigger distribution of on-chain yield to your supporters. This calls the SwiftFund treasury contract on Hedera.
+              Trigger distribution of on-chain yield to your supporters. This calls the SwiftFund treasury contract on Hedera. You cannot distribute less than the total amount your community has funded across your projects.
             </p>
           </div>
           <div className="p-4 sm:p-6">
@@ -495,6 +509,48 @@ export default function CreatorDashboard() {
                   placeholder="e.g. 10000"
                   className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-red-600 outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-400 mb-1">Percentage of earnings to distribute (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={formEarningsPercent}
+                  onChange={(e) => setFormEarningsPercent(e.target.value)}
+                  placeholder="e.g. 20"
+                  className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-red-600 outline-none"
+                />
+                <p className="font-heading text-[11px] text-neutral-500 mt-1 tracking-tight">
+                  Share of project revenue (0–100%) that goes to backers. Shown on Discover.
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-400 mb-1">Account information (PDF)</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 px-3 py-2 text-xs font-medium text-white cursor-pointer transition-colors">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => setFormAccountPdf(e.target.files?.[0] ?? null)}
+                      className="sr-only"
+                    />
+                    {formAccountPdf ? formAccountPdf.name : 'Upload PDF'}
+                  </label>
+                  {formAccountPdf && (
+                    <button
+                      type="button"
+                      onClick={() => setFormAccountPdf(null)}
+                      className="text-xs text-neutral-400 hover:text-red-400"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="font-heading text-[11px] text-neutral-500 mt-1 tracking-tight">
+                  Optional PDF with account/identity info for verification. Max 5 MB.
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-neutral-400 mb-1">Cover image (required for approval)</label>

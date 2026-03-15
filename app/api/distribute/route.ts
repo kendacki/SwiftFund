@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getPrivyClient } from '@/lib/privy';
 import { executeDistribution } from '@/lib/hedera';
+import { loadProjectsFromStorage } from '@/lib/projectsStorage';
+
+const DEFAULT_DISTRIBUTION_AMOUNT = 136880;
 
 export async function POST(req: Request) {
   try {
@@ -12,10 +15,37 @@ export async function POST(req: Request) {
 
     const privy = getPrivyClient();
     const verifiedClaims = await privy.verifyAuthToken(authToken);
-    console.log('Verified user ID:', verifiedClaims.userId);
+    const userId = (verifiedClaims as { userId?: string }).userId;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // For now, use a fixed per-fan amount as in the prototype.
-    const { status, transactionId } = await executeDistribution(136880);
+    let amountUsd: number | undefined;
+    try {
+      const body = await req.json();
+      if (typeof body?.amountUsd === 'number' && Number.isFinite(body.amountUsd)) {
+        amountUsd = body.amountUsd;
+      }
+    } catch {
+      // no body or invalid JSON
+    }
+
+    const projects = await loadProjectsFromStorage();
+    const creatorProjects = projects.filter((p) => p.creatorId === userId);
+    const totalFunded = creatorProjects.reduce((sum, p) => sum + (p.amountRaised ?? 0), 0);
+
+    if (totalFunded > 0) {
+      if (amountUsd == null || amountUsd < totalFunded) {
+        return NextResponse.json(
+          {
+            error: `Distribution amount cannot be lower than the amount funded by your community. Total funded: $${totalFunded.toLocaleString()}. Please distribute at least $${totalFunded.toLocaleString()}.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const { status, transactionId } = await executeDistribution(DEFAULT_DISTRIBUTION_AMOUNT);
 
     return NextResponse.json({
       success: true,

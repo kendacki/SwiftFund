@@ -19,6 +19,10 @@ export interface Project {
   updatedAt: string;
   /** For Discover filters */
   tags?: ('all' | 'trending' | 'endingSoon')[];
+  /** Percentage of earnings (0–100) shared with backers */
+  earningsDistributionPercent?: number;
+  /** URL to uploaded PDF with account information */
+  accountInfoPdfUrl?: string;
 }
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {

@@ -14,6 +14,8 @@ export interface ProjectCardProps {
   imageUrl: string;
   progressPercent: number;
   stats: ProjectCardStats;
+  /** Percentage of earnings shared with backers (0–100). Shown on card when set. */
+  earningsDistributionPercent?: number;
   onFundClick: (projectId: string) => void;
 }
 
@@ -24,9 +26,11 @@ export default function ProjectCard({
   imageUrl,
   progressPercent,
   stats,
+  earningsDistributionPercent,
   onFundClick,
 }: ProjectCardProps) {
   const safeProgress = Math.max(0, Math.min(100, progressPercent));
+  const hasEarningsPct = typeof earningsDistributionPercent === 'number' && earningsDistributionPercent >= 0 && earningsDistributionPercent <= 100;
 
   return (
     <div className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4 sm:p-5 shadow-[0_0_20px_rgba(0,0,0,0.35)] min-w-0">
@@ -45,6 +49,12 @@ export default function ProjectCard({
           <p className="font-heading text-xs text-neutral-400 truncate tracking-tight">{handle}</p>
         </div>
       </div>
+
+      {hasEarningsPct && (
+        <p className="font-heading text-xs text-red-400/90 mb-2 tracking-tight">
+          {earningsDistributionPercent}% of earnings to backers
+        </p>
+      )}
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">

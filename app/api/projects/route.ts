@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { list, put } from '@vercel/blob';
+import { put } from '@vercel/blob';
 import { getPrivyClient } from '@/lib/privy';
+import { loadProjectsFromStorage, saveProjectsToStorage } from '@/lib/projectsStorage';
 import type { Project, ProjectStatus } from '@/lib/projects';
 
 const PROJECTS_DATA_PATH = 'projects/data.json';
 const PROJECTS_IMAGE_PREFIX = 'projects/images/';
+const PROJECTS_DOCS_PREFIX = 'projects/docs/';
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4 MB
+const MAX_PDF_SIZE = 5 * 1024 * 1024; // 5 MB
 
 function ensureBlobToken(): void {
   if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
@@ -22,28 +25,6 @@ async function getAuthUserId(req: Request): Promise<string | null> {
     .catch(() => null);
 }
 
-async function loadProjects(): Promise<Project[]> {
-  try {
-    const { blobs } = await list({ prefix: 'projects/', limit: 10 });
-    const dataBlob = blobs.find((b) => b.pathname === PROJECTS_DATA_PATH);
-    if (!dataBlob?.url) return [];
-    const res = await fetch(dataBlob.url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data.projects) ? data.projects : [];
-  } catch {
-    return [];
-  }
-}
-
-async function saveProjects(projects: Project[]): Promise<void> {
-  await put(PROJECTS_DATA_PATH, JSON.stringify({ projects }), {
-    access: 'public',
-    contentType: 'application/json',
-    addRandomSuffix: false,
-  });
-}
-
 export async function GET(req: Request) {
   try {
     ensureBlobToken();
@@ -52,7 +33,7 @@ export async function GET(req: Request) {
     const discover = searchParams.get('discover') === '1';
     const userId = mine ? await getAuthUserId(req) : null;
 
-    const projects = await loadProjects();
+    const projects = await loadProjectsFromStorage();
 
     if (discover) {
       const approved = projects.filter((p) => p.status === 'approved');
@@ -87,6 +68,8 @@ export async function POST(req: Request) {
     const goalAmount = Number(formData.get('goalAmount'));
     const status = ((formData.get('status') as string) || 'pending') as ProjectStatus;
     const imageFile = formData.get('image') as File | null;
+    const earningsPercent = Number(formData.get('earningsDistributionPercent'));
+    const accountPdf = formData.get('accountPdf') as File | null;
 
     if (!title || !creatorName || !handle) {
       return NextResponse.json(
@@ -97,8 +80,11 @@ export async function POST(req: Request) {
     if (!Number.isFinite(goalAmount) || goalAmount <= 0) {
       return NextResponse.json({ error: 'Goal amount must be a positive number' }, { status: 400 });
     }
+    const safeEarningsPercent = Number.isFinite(earningsPercent) && earningsPercent >= 0 && earningsPercent <= 100
+      ? Math.round(earningsPercent)
+      : undefined;
 
-    const projects = await loadProjects();
+    const projects = await loadProjectsFromStorage();
     const id = `proj_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const now = new Date().toISOString();
 
@@ -115,6 +101,22 @@ export async function POST(req: Request) {
       imageUrl = blob.url;
     }
 
+    let accountInfoPdfUrl = '';
+    if (accountPdf && accountPdf instanceof File && accountPdf.size > 0) {
+      if (accountPdf.type !== 'application/pdf') {
+        return NextResponse.json({ error: 'Account document must be a PDF' }, { status: 400 });
+      }
+      if (accountPdf.size > MAX_PDF_SIZE) {
+        return NextResponse.json({ error: 'PDF too large (max 5 MB)' }, { status: 400 });
+      }
+      const pdfBlob = await put(`${PROJECTS_DOCS_PREFIX}${id}.pdf`, accountPdf, {
+        access: 'public',
+        contentType: 'application/pdf',
+        addRandomSuffix: false,
+      });
+      accountInfoPdfUrl = pdfBlob.url;
+    }
+
     const newProject: Project = {
       id,
       creatorId: userId,
@@ -129,10 +131,12 @@ export async function POST(req: Request) {
       createdAt: now,
       updatedAt: now,
       tags: ['all'],
+      earningsDistributionPercent: safeEarningsPercent,
+      accountInfoPdfUrl: accountInfoPdfUrl || undefined,
     };
 
     projects.push(newProject);
-    await saveProjects(projects);
+    await saveProjectsToStorage(projects);
 
     return NextResponse.json({ project: newProject });
   } catch (error: unknown) {
@@ -157,7 +161,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Invalid id or status' }, { status: 400 });
     }
 
-    const projects = await loadProjects();
+    const projects = await loadProjectsFromStorage();
     const index = projects.findIndex((p) => p.id === id && p.creatorId === userId);
     if (index === -1) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
@@ -172,7 +176,7 @@ export async function PATCH(req: Request) {
 
     projects[index].status = status;
     projects[index].updatedAt = new Date().toISOString();
-    await saveProjects(projects);
+    await saveProjectsToStorage(projects);
 
     return NextResponse.json({ project: projects[index] });
   } catch (error: unknown) {
