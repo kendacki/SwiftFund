@@ -49,7 +49,8 @@ export default function AppNav() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  const logoHref = '/portfolio';
+  const logoHref =
+    !authenticated && pathname === '/discover' ? '/' : '/portfolio';
 
   return (
     <nav className="sticky top-0 z-50 flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-b border-neutral-800/50 bg-neutral-950/95 backdrop-blur-sm">
