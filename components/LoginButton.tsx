@@ -10,7 +10,7 @@ function getProfileStorageKey(userId: string | undefined): string | null {
   return userId ? `${PROFILE_IMAGE_KEY_PREFIX}${userId}` : null;
 }
 
-/** Resize image to a square of at most PROFILE_IMAGE_MAX_SIZE, center-cropped; returns a new File. Handles edge cases so different sizes/orientations do not crash. */
+/** Center-crop image to a PROFILE_IMAGE_MAX_SIZE x PROFILE_IMAGE_MAX_SIZE square; returns a new File. Ensures only the center of the image is used so no unwanted parts show. */
 function resizeImageFile(file: File): Promise<File> {
   return new Promise((resolve) => {
     let url: string | null = null;
@@ -27,18 +27,18 @@ function resizeImageFile(file: File): Promise<File> {
         cleanup();
         const w = img.naturalWidth || 1;
         const h = img.naturalHeight || 1;
-        const dim = Math.max(1, Math.min(w, h, PROFILE_IMAGE_MAX_SIZE));
+        const cropSize = Math.max(1, Math.min(w, h));
+        const sx = (w - cropSize) / 2;
+        const sy = (h - cropSize) / 2;
         const canvas = document.createElement('canvas');
-        canvas.width = dim;
-        canvas.height = dim;
+        canvas.width = PROFILE_IMAGE_MAX_SIZE;
+        canvas.height = PROFILE_IMAGE_MAX_SIZE;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           resolve(file);
           return;
         }
-        const sx = (w - dim) / 2;
-        const sy = (h - dim) / 2;
-        ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
+        ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, PROFILE_IMAGE_MAX_SIZE, PROFILE_IMAGE_MAX_SIZE);
         canvas.toBlob(
           (blob) => {
             if (blob) {
@@ -145,17 +145,24 @@ export default function LoginButton() {
   };
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.id) return;
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please choose an image file (e.g. JPG, PNG).');
+      return;
+    }
     const key = getProfileStorageKey(user.id);
     e.target.value = '';
-
+    setUploadError(null);
     setUploadingAvatar(true);
+
     try {
       const token = await getAccessToken();
       if (!token) {
+        setUploadError('Session expired. Please log in again.');
         setUploadingAvatar(false);
         return;
       }
@@ -168,9 +175,12 @@ export default function LoginButton() {
         body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      if (!res.ok) {
+        throw new Error(data?.error || `Upload failed (${res.status})`);
+      }
       if (data?.url) {
-        setProfileImageUrl(data.url);
+        const urlWithCacheBust = `${data.url}${data.url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        setProfileImageUrl(urlWithCacheBust);
         if (key) {
           try {
             localStorage.setItem(key, data.url);
@@ -180,51 +190,9 @@ export default function LoginButton() {
         }
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Upload failed. Try again.';
+      setUploadError(message);
       console.error('Profile upload failed:', err);
-      // Fallback: keep previous localStorage-only flow for this session if API fails
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        const img = new Image();
-        const saveAndSet = (url: string) => {
-          try {
-            if (key) localStorage.setItem(key, url);
-          } catch {
-            /* ignore */
-          }
-          setProfileImageUrl(url);
-        };
-        img.onload = () => {
-          try {
-            const w = img.naturalWidth || 1;
-            const h = img.naturalHeight || 1;
-            const dim = Math.max(1, Math.min(w, h, PROFILE_IMAGE_MAX_SIZE));
-            const canvas = document.createElement('canvas');
-            canvas.width = dim;
-            canvas.height = dim;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              saveAndSet(dataUrl);
-              setUploadingAvatar(false);
-              return;
-            }
-            const sx = (w - dim) / 2;
-            const sy = (h - dim) / 2;
-            ctx.drawImage(img, sx, sy, dim, dim, 0, 0, dim, dim);
-            saveAndSet(canvas.toDataURL('image/jpeg', 0.85));
-          } catch {
-            saveAndSet(dataUrl);
-          }
-          setUploadingAvatar(false);
-        };
-        img.onerror = () => {
-          saveAndSet(dataUrl);
-          setUploadingAvatar(false);
-        };
-        img.src = dataUrl;
-      };
-      reader.readAsDataURL(file);
-      return;
     } finally {
       setUploadingAvatar(false);
     }
@@ -305,6 +273,11 @@ export default function LoginButton() {
                     />
                     {uploadingAvatar ? 'Uploading…' : 'Upload profile'}
                   </label>
+                  {uploadError && (
+                    <p className="mt-2 text-xs text-red-400" role="alert">
+                      {uploadError}
+                    </p>
+                  )}
                 </div>
                 <div className="px-4 pt-2">
                   <button
