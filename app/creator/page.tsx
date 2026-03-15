@@ -389,7 +389,7 @@ export default function CreatorDashboard() {
             <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
               Reward Distribution
             </h2>
-            <p className="font-heading text-sm text-neutral-400 mt-1 max-w-xl tracking-tight">
+            <p className="font-heading text-xs text-neutral-400 mt-1 max-w-xl tracking-tight">
               Send rewards from your treasury to your backers. Payouts run on Hedera and are secure and transparent. The amount you distribute must be at least equal to what your community has funded so far across your projects.
             </p>
           </div>
@@ -427,7 +427,7 @@ export default function CreatorDashboard() {
             </div>
             {treasuryStatus && (
               <p
-                className={`mt-4 text-sm whitespace-pre-wrap rounded-lg p-3 border ${
+                className={`mt-4 text-xs whitespace-pre-wrap rounded-lg p-2 border ${
                   treasuryStatus.startsWith('Distribution succeeded')
                     ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
                     : 'text-red-300 bg-red-500/10 border-red-500/30'
@@ -591,7 +591,7 @@ export default function CreatorDashboard() {
                 </div>
               </div>
               {formError && (
-                <p className="text-xs text-red-400 bg-red-500/10 rounded-lg p-2">
+                <p className="text-[11px] text-red-400 bg-red-500/10 rounded-lg p-1.5">
                   {formError}
                 </p>
               )}
