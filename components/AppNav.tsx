@@ -70,7 +70,7 @@ export default function AppNav() {
         </Link>
       </div>
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {showWidget && (
+        {showWidget && authenticated && (
           <div className="relative shrink-0" ref={menuRef}>
             <button
               type="button"
