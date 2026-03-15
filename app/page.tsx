@@ -145,6 +145,57 @@ export default function LandingPage() {
             Discover
           </Link>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="w-full max-w-4xl mt-4 sm:mt-6"
+        >
+          <div className="flex flex-wrap gap-6 sm:gap-8 items-center justify-center border-t border-neutral-800/50 pt-4 sm:pt-6 w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.7 }}
+              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
+            >
+              <p className="font-heading text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
+                200ms
+              </p>
+              <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
+                Consensus Speed
+              </p>
+            </motion.div>
+            <div className="hidden sm:block w-px h-12 bg-neutral-800" />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.8 }}
+              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
+            >
+              <p className="font-heading text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
+                ERC-20
+              </p>
+              <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
+                EVM Compatible
+              </p>
+            </motion.div>
+            <div className="hidden sm:block w-px h-12 bg-neutral-800" />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.9 }}
+              className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem]"
+            >
+              <p className="font-heading text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
+                100%
+              </p>
+              <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
+                On-Chain Oracle
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
         </main>
       </section>
 
