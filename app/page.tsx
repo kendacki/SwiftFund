@@ -144,10 +144,10 @@ export default function LandingPage() {
               <p className="font-heading text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2">
                 How it works
               </p>
-              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
+              <h2 className="font-heading text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
                 Fund creators. Share in their success.
               </h2>
-              <p className="font-heading text-sm sm:text-base text-neutral-400 leading-relaxed tracking-tight max-w-xl">
+              <p className="font-heading text-xs sm:text-base text-neutral-400 leading-relaxed tracking-tight max-w-xl">
                 Creators list projects; backers fund them and earn a share of future revenue. Everything runs on Hedera—fast, low-cost, and transparent. Browse live projects, fund your favorites, and track rewards from one place.
               </p>
               <Link
