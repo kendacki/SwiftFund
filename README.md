@@ -10,7 +10,7 @@
 
 SwiftFund bridges the gap between creators and their communities. Traditional crowdfunding platforms allow users to back projects, but they rarely allow those early believers to share in the long-term financial success of the product.
 
-We built SwiftFund to change that. By leveraging smart contracts, SwiftFund allows creators to raise capital in HBAR, while automatically and proportionally distributing a share of their future revenue back to the original funders. It is transparent, automated, and built for scale. Just as importantly, SwiftFund addresses the biggest risk in Web3 crowdfunding—creator ghosting—by securely bridging verifiable Web2 revenue data into our on-chain protocol.
+We built SwiftFund to change that. By leveraging smart contracts, SwiftFund allows creators to raise capital in HBAR, while automatically and proportionally distributing a share of their future revenue back to the original funders. It is transparent, automated, and built for scale. Just as importantly, SwiftFund addresses the biggest risk in Web3 crowdfunding—creator ghosting by securely bridging verifiable Web2 revenue data into our on-chain protocol.
 
 ## How It Works
 
@@ -35,7 +35,7 @@ To make SwiftFund suitable for institutional-grade Revenue-Based Financing (RBF)
 - **YouTube Analytics Integration:** Once linked, SwiftFund queries the YouTube Analytics API to fetch 30-day verified estimated ad revenue and channel views for the creator's channel. These metrics are surfaced directly in the Creator Dashboard as \"Verified Metrics\".
 - **Off-Chain Oracle of Accountability:** By combining on-chain yield distribution with off-chain, third-party analytics, SwiftFund effectively turns YouTube Analytics into a soft oracle. Funders can see whether a creator is generating real fiat revenue and adhering to their yield distribution timeframe before further funding or evaluating performance.
 
-### Architectural Highlight: The "Pull" Method and The 200 Cap
+### Architectural Highlight: The "Pull" Method
 
 Sending individual payouts to thousands of users (the "Push" method) is a well-known anti-pattern in Web3 that leads to failed transactions and drained gas. SwiftFund uses the "Pull" method. Creators deposit the yield once, and users withdraw their individual shares independently. To ensure absolute security and prevent Denial of Service (DoS) loop attacks, we hard-capped funding slots at 200 users per project, creating an exclusive, gas-optimized backing environment.
 
