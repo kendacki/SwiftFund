@@ -24,7 +24,7 @@ export interface ChartPoint {
 type Timeframe = '1H' | '1D' | '1M' | '1Y';
 
 interface HbarPoint {
-  date: string;
+  time: string;
   price: number;
 }
 
@@ -36,75 +36,117 @@ interface CreatorChartProps {
 
 export default function CreatorChart(_props: CreatorChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
+  const [chartData, setChartData] = useState<HbarPoint[]>([]);
+  const [currentPrice, setCurrentPrice] = useState(0);
+  const [priceChange, setPriceChange] = useState<{
+    amount: number;
+    percentage: number;
+    isPositive: boolean;
+  }>({ amount: 0, percentage: 0, isPositive: true });
 
-  const getLengthForTimeframe = (tf: Timeframe): number => {
+  // Map timeframe to CoinCap interval
+  const getIntervalForTimeframe = (tf: Timeframe): string => {
     switch (tf) {
       case '1H':
-        return 60; // 60 minutes
+        return 'm1';
       case '1D':
-        return 24; // 24 hours
+        return 'm15';
       case '1M':
-        return 30; // 30 days
+        return 'h12';
       case '1Y':
-        return 52; // 52 weeks
+        return 'd1';
       default:
-        return 30;
+        return 'm15';
     }
   };
 
-  const buildMockSeries = (tf: Timeframe, basePrice: number): HbarPoint[] => {
-    const len = getLengthForTimeframe(tf);
-    const points: HbarPoint[] = [];
-    let price = basePrice;
-    for (let i = 0; i < len; i++) {
-      const drift = 0.00005;
-      const noise = (Math.random() - 0.5) * 0.002;
-      price = Math.max(0.01, price * (1 + drift + noise));
-      points.push({
-        date: `${len - i}`,
-        price: Number(price.toFixed(4)),
-      });
-    }
-    return points.reverse();
-  };
-
-  const [hbarData, setHbarData] = useState<HbarPoint[]>(() =>
-    buildMockSeries('1D', 0.08)
-  );
-
+  // 1) Historical fetch whenever timeframe changes
   useEffect(() => {
-    // Rebuild series when timeframe changes
-    setHbarData((prev) => {
-      const lastPrice = prev.length ? prev[prev.length - 1].price : 0.08;
-      return buildMockSeries(timeframe, lastPrice || 0.08);
-    });
+    const fetchHistorical = async () => {
+      try {
+        const interval = getIntervalForTimeframe(timeframe);
+        const res = await fetch(
+          `https://api.coincap.io/v2/assets/hedera-hashgraph/history?interval=${interval}`
+        );
+        const json = await res.json();
+        const raw = Array.isArray(json?.data) ? json.data : [];
 
-    const intervalId = setInterval(() => {
-      setHbarData((prev) => {
-        if (!prev.length) return buildMockSeries(timeframe, 0.08);
-        const last = prev[prev.length - 1];
-        const drift = 0.00005;
-        const noise = (Math.random() - 0.5) * 0.002;
-        const nextPrice = Math.max(0.01, last.price * (1 + drift + noise));
-        const nextPoint: HbarPoint = {
-          date: String(Number(last.date) + 1 || Date.now()),
-          price: Number(nextPrice.toFixed(4)),
-        };
-        const updated = [...prev.slice(1), nextPoint];
-        return updated;
-      });
-    }, 5000);
+        const mapped: HbarPoint[] = raw.map((pt: any) => {
+          const d = new Date(pt.time);
+          const timeLabel =
+            timeframe === '1H' || timeframe === '1D'
+              ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : d.toLocaleDateString();
+          return {
+            time: timeLabel,
+            price: Number.parseFloat(pt.priceUsd ?? '0') || 0,
+          };
+        });
 
-    return () => clearInterval(intervalId);
+        if (!mapped.length) return;
+
+        // Slice to a reasonable recent window
+        let windowed = mapped;
+        if (timeframe === '1H') windowed = mapped.slice(-60);
+        else if (timeframe === '1D') windowed = mapped.slice(-96);
+        else if (timeframe === '1M') windowed = mapped.slice(-60);
+        else if (timeframe === '1Y') windowed = mapped.slice(-365);
+
+        setChartData(windowed);
+
+        const first = windowed[0]?.price ?? 0;
+        const last = windowed[windowed.length - 1]?.price ?? 0;
+        if (first > 0) {
+          const amount = last - first;
+          const percentage = (amount / first) * 100;
+          setPriceChange({
+            amount,
+            percentage,
+            isPositive: amount >= 0,
+          });
+        }
+        setCurrentPrice(last);
+      } catch {
+        // On failure, leave existing data
+      }
+    };
+
+    void fetchHistorical();
   }, [timeframe]);
 
-  const chartData = useMemo(
-    () => (Array.isArray(hbarData) ? hbarData : []),
-    [hbarData]
-  );
+  // 2) High-frequency live ticker (3s)
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch(
+          'https://api.coincap.io/v2/assets/hedera-hashgraph'
+        );
+        const json = await res.json();
+        const price = Number.parseFloat(json?.data?.priceUsd ?? '0') || 0;
+        if (!price) return;
 
-  const currentPrice =
-    chartData.length > 0 ? chartData[chartData.length - 1]?.price ?? 0 : 0;
+        setCurrentPrice(price);
+        setChartData((prev) => {
+          if (!prev.length) return prev;
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            price,
+          };
+          return updated;
+        });
+      } catch {
+        // ignore transient errors
+      }
+    }, 3000);
+
+    return () => clearInterval(id);
+  }, []);
+
+  const chartSeries = useMemo(
+    () => (Array.isArray(chartData) ? chartData : []),
+    [chartData]
+  );
 
   return (
     <motion.section
@@ -119,13 +161,23 @@ export default function CreatorChart(_props: CreatorChartProps) {
             Live Hedera Mainnet (HBAR/USD)
           </h2>
           <p className="font-heading text-xs text-neutral-400 mt-0.5 tracking-tight">
-            Simulated live HBAR price feed for demo purposes.
+            Live HBAR price feed from CoinCap, auto-updating every 3 seconds.
           </p>
           <p className="mt-1 font-heading text-xs text-emerald-300 tracking-tight">
             Current price:{' '}
             <span className="font-semibold">
               {currentPrice ? `$${currentPrice.toFixed(4)}` : '—'}
             </span>
+            {priceChange.amount !== 0 && (
+              <span
+                className={`ml-2 ${
+                  priceChange.isPositive ? 'text-emerald-400' : 'text-red-400'
+                }`}
+              >
+                {priceChange.isPositive ? '+' : '-'}
+                {Math.abs(priceChange.percentage).toFixed(2)}%
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -167,7 +219,7 @@ export default function CreatorChart(_props: CreatorChartProps) {
       <div className="p-4 sm:p-6">
         <div className="w-full h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
+            <AreaChart data={chartSeries}>
               <defs>
                 <linearGradient id="hbarGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
@@ -180,16 +232,21 @@ export default function CreatorChart(_props: CreatorChartProps) {
                 vertical={false}
               />
               <XAxis
-                dataKey="date"
+                dataKey="time"
                 tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
                 axisLine={{ stroke: 'rgba(55,65,81,0.8)' }}
                 tickLine={false}
               />
               <YAxis
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                allowDataOverflow={true}
+                hide={false}
+                width={60}
                 tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(v) => `$${v.toFixed(3)}`}
+                tickFormatter={(v) => `$${(v as number).toFixed(4)}`}
               />
               <Tooltip
                 contentStyle={{
