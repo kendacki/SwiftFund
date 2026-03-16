@@ -68,6 +68,9 @@ export default function CreatorDashboard() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA | null>(null);
   const [hasConsented, setHasConsented] = useState(false);
+  const [ytMetrics, setYtMetrics] = useState<{ revenue: number; views: number } | null>(null);
+  const [ytLoading, setYtLoading] = useState(false);
+  const [ytError, setYtError] = useState<string | null>(null);
 
   const loadChartData = async () => {
     setChartLoading(true);
@@ -114,6 +117,42 @@ export default function CreatorDashboard() {
     loadChartData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const anyYoutubeLinked = projects.some((p) => p.youtubeLinked);
+
+  const fetchYoutubeMetrics = async () => {
+    setYtLoading(true);
+    setYtError(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setYtError('Please log in again to view analytics.');
+        setYtLoading(false);
+        return;
+      }
+      const res = await fetch('/api/youtube/earnings', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setYtError(data?.error || 'Failed to load YouTube analytics.');
+        setYtMetrics(null);
+        setYtLoading(false);
+        return;
+      }
+      setYtMetrics({
+        revenue: Number(data.revenue ?? 0),
+        views: Number(data.views ?? 0),
+      });
+    } catch (err) {
+      setYtError(
+        err instanceof Error ? err.message : 'Failed to load YouTube analytics.'
+      );
+      setYtMetrics(null);
+    } finally {
+      setYtLoading(false);
+    }
+  };
 
   const openCreate = () => {
     setFormTitle('');
@@ -514,53 +553,114 @@ export default function CreatorDashboard() {
             </p>
           </div>
           <div className="p-4 sm:p-6 space-y-4">
-            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 sm:p-4">
-              <p className="font-heading text-xs text-neutral-400 mb-2 tracking-tight">
-                By connecting your YouTube Analytics account, you acknowledge and agree to the following:
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-neutral-500">
-                <li>
-                  <span className="font-semibold text-neutral-300">Read-Only Access:</span>{' '}
-                  SwiftFund only requests read-only access to your YouTube Analytics. We cannot edit, publish, or delete any content on your channel.
-                </li>
-                <li>
-                  <span className="font-semibold text-neutral-300">Data Usage:</span>{' '}
-                  Analytics data is used strictly for yield verification, performance reporting, and improving the transparency of your revenue-based financing terms.
-                </li>
-                <li>
-                  <span className="font-semibold text-neutral-300">Beta Liability:</span>{' '}
-                  SwiftFund is a beta-stage protocol. By connecting your YouTube account, you agree to use the integration at your own risk and hold SwiftFund harmless for any issues arising from third-party API changes or outages.
-                </li>
-              </ul>
-            </div>
-            <div className="flex items-start gap-2">
-              <input
-                id="youtube-consent"
-                type="checkbox"
-                checked={hasConsented}
-                onChange={(e) => setHasConsented(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-red-600 focus:ring-red-500"
-              />
-              <label
-                htmlFor="youtube-consent"
-                className="font-heading text-xs sm:text-sm text-neutral-400 tracking-tight"
-              >
-                I have read and agree to the YouTube Analytics connection terms.
-              </label>
-            </div>
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                onClick={() => {
-                  if (!hasConsented) return;
-                  window.location.href = '/api/youtube/auth';
-                }}
-                disabled={!hasConsented}
-                className="min-w-[11rem] disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                Link YouTube Analytics
-              </Button>
-            </div>
+            {!projectsLoading && anyYoutubeLinked ? (
+              <>
+                <div className="rounded-lg border border-emerald-600/40 bg-emerald-500/5 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <div>
+                      <p className="font-heading text-sm font-semibold text-emerald-200 tracking-tight">
+                        ✅ YouTube Analytics Connected
+                      </p>
+                      <p className="font-heading text-xs text-emerald-200/80 tracking-tight">
+                        Live sync active for your linked channel.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex items-center rounded-full border border-emerald-500/60 px-3 py-1 text-[11px] font-heading text-emerald-200 tracking-tight"
+                    >
+                      <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 mr-1" />
+                      Live Sync Active
+                    </button>
+                    <Button
+                      type="button"
+                      onClick={fetchYoutubeMetrics}
+                      disabled={ytLoading}
+                      className="text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {ytLoading ? 'Loading analytics…' : 'View Analytics'}
+                    </Button>
+                  </div>
+                </div>
+                {ytError && (
+                  <p className="font-heading text-xs text-red-400 tracking-tight">
+                    {ytError}
+                  </p>
+                )}
+                {ytMetrics && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <DashboardCard
+                      title="30-Day Estimated Revenue"
+                      value={new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(ytMetrics.revenue)}
+                      subtitle="Private · YouTube Analytics"
+                    />
+                    <DashboardCard
+                      title="30-Day Channel Views"
+                      value={ytMetrics.views.toLocaleString()}
+                      subtitle="Private · YouTube Analytics"
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 sm:p-4">
+                  <p className="font-heading text-xs text-neutral-400 mb-2 tracking-tight">
+                    By connecting your YouTube Analytics account, you acknowledge and agree to the following:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-neutral-500">
+                    <li>
+                      <span className="font-semibold text-neutral-300">Read-Only Access:</span>{' '}
+                      SwiftFund only requests read-only access to your YouTube Analytics. We cannot edit, publish, or delete any content on your channel.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-neutral-300">Data Usage:</span>{' '}
+                      Analytics data is used strictly for yield verification, performance reporting, and improving the transparency of your revenue-based financing terms.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-neutral-300">Beta Liability:</span>{' '}
+                      SwiftFund is a beta-stage protocol. By connecting your YouTube account, you agree to use the integration at your own risk and hold SwiftFund harmless for any issues arising from third-party API changes or outages.
+                    </li>
+                  </ul>
+                </div>
+                <div className="flex items-start gap-2">
+                  <input
+                    id="youtube-consent"
+                    type="checkbox"
+                    checked={hasConsented}
+                    onChange={(e) => setHasConsented(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-red-600 focus:ring-red-500"
+                  />
+                  <label
+                    htmlFor="youtube-consent"
+                    className="font-heading text-xs sm:text-sm text-neutral-400 tracking-tight"
+                  >
+                    I have read and agree to the YouTube Analytics connection terms.
+                  </label>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!hasConsented) return;
+                      window.location.href = '/api/youtube/auth';
+                    }}
+                    disabled={!hasConsented}
+                    className="min-w-[11rem] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Link YouTube Analytics
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </section>
       </div>
