@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="/logo.png" alt="SwiftFund Logo" width="200" />
+  <img src="./swiftfund-logo.png" alt="SwiftFund Logo" width="200" />
   <h1>SwiftFund</h1>
   <p><strong>Decentralized Crowdfunding & Automated Yield Sharing</strong></p>
 </div>
