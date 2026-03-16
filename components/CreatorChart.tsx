@@ -37,89 +37,65 @@ interface CreatorChartProps {
 export default function CreatorChart(_props: CreatorChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
 
-  const buildMockSeries = (days: number): HbarPoint[] => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(start.getDate() - (days - 1));
-    const base = 0.075;
-    const span = 0.02;
-    return Array.from({ length: days }).map((_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      const t = i / Math.max(1, days - 1);
-      const seasonal = Math.sin((i / 7) * Math.PI * 2) * 0.03;
-      const value = base + span * t + seasonal;
-      return {
-        date: d.toLocaleDateString(),
-        price: Number(value.toFixed(4)),
-      };
-    });
+  const getLengthForTimeframe = (tf: Timeframe): number => {
+    switch (tf) {
+      case '1H':
+        return 60; // 60 minutes
+      case '1D':
+        return 24; // 24 hours
+      case '1M':
+        return 30; // 30 days
+      case '1Y':
+        return 52; // 52 weeks
+      default:
+        return 30;
+    }
   };
 
-  const [hbarData, setHbarData] = useState<HbarPoint[]>(() => buildMockSeries(30));
-  const [loading, setLoading] = useState(true);
+  const buildMockSeries = (tf: Timeframe, basePrice: number): HbarPoint[] => {
+    const len = getLengthForTimeframe(tf);
+    const points: HbarPoint[] = [];
+    let price = basePrice;
+    for (let i = 0; i < len; i++) {
+      const drift = 0.00005;
+      const noise = (Math.random() - 0.5) * 0.002;
+      price = Math.max(0.01, price * (1 + drift + noise));
+      points.push({
+        date: `${len - i}`,
+        price: Number(price.toFixed(4)),
+      });
+    }
+    return points.reverse();
+  };
+
+  const [hbarData, setHbarData] = useState<HbarPoint[]>(() =>
+    buildMockSeries('1D', 0.08)
+  );
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | undefined;
+    // Rebuild series when timeframe changes
+    setHbarData((prev) => {
+      const lastPrice = prev.length ? prev[prev.length - 1].price : 0.08;
+      return buildMockSeries(timeframe, lastPrice || 0.08);
+    });
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const intervalParam =
-          timeframe === '1H'
-            ? 'h1'
-            : timeframe === '1D'
-              ? 'm30'
-              : timeframe === '1M'
-                ? 'd1'
-                : 'd1';
+    const intervalId = setInterval(() => {
+      setHbarData((prev) => {
+        if (!prev.length) return buildMockSeries(timeframe, 0.08);
+        const last = prev[prev.length - 1];
+        const drift = 0.00005;
+        const noise = (Math.random() - 0.5) * 0.002;
+        const nextPrice = Math.max(0.01, last.price * (1 + drift + noise));
+        const nextPoint: HbarPoint = {
+          date: String(Number(last.date) + 1 || Date.now()),
+          price: Number(nextPrice.toFixed(4)),
+        };
+        const updated = [...prev.slice(1), nextPoint];
+        return updated;
+      });
+    }, 5000);
 
-        const res = await fetch(
-          `https://api.coincap.io/v2/assets/hedera-hashgraph/history?interval=${intervalParam}`
-        );
-        const json = await res.json();
-        const raw = Array.isArray(json?.data) ? json.data : [];
-        const formatted: HbarPoint[] = raw.map((item: any) => {
-          const d = new Date(item.time);
-          const label =
-            timeframe === '1H' || timeframe === '1D'
-              ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : d.toLocaleDateString();
-          return {
-            date: label,
-            price: Number.parseFloat(item.priceUsd ?? '0') || 0,
-          };
-        });
-        if (formatted.length > 0) {
-          let sliced: HbarPoint[] = formatted;
-          if (timeframe === '1H') {
-            sliced = formatted.slice(-24);
-          } else if (timeframe === '1D') {
-            sliced = formatted.slice(-48);
-          } else if (timeframe === '1M') {
-            sliced = formatted.slice(-30);
-          } else if (timeframe === '1Y') {
-            sliced = formatted.slice(-365);
-          }
-          setHbarData(sliced);
-        } else {
-          // fall back to local mock if API returns nothing
-          const fallbackDays = timeframe === '1Y' ? 365 : timeframe === '1M' ? 30 : 30;
-          setHbarData(buildMockSeries(fallbackDays));
-        }
-      } catch {
-        // leave existing data; UI will show last good value or skeleton
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchData();
-    intervalId = setInterval(fetchData, 60_000);
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [timeframe]);
 
   const chartData = useMemo(
@@ -143,7 +119,7 @@ export default function CreatorChart(_props: CreatorChartProps) {
             Live Hedera Mainnet (HBAR/USD)
           </h2>
           <p className="font-heading text-xs text-neutral-400 mt-0.5 tracking-tight">
-            Powered by CoinCap. Auto-refreshes every 60 seconds.
+            Simulated live HBAR price feed for demo purposes.
           </p>
           <p className="mt-1 font-heading text-xs text-emerald-300 tracking-tight">
             Current price:{' '}
