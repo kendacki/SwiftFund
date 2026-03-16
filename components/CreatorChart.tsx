@@ -106,8 +106,9 @@ export default function CreatorChart(_props: CreatorChartProps) {
           });
         }
         setCurrentPrice(last);
-      } catch {
-        // On failure, leave existing data
+      } catch (error) {
+        console.error('CoinCap API Error (history):', error);
+        // On failure, leave existing data so chart remains visible.
       }
     };
 
@@ -135,10 +136,11 @@ export default function CreatorChart(_props: CreatorChartProps) {
           };
           return updated;
         });
-      } catch {
-        // ignore transient errors
+      } catch (error) {
+        console.error('CoinCap API Error (ticker):', error);
+        // Ignore this beat; keep existing chartData/currentPrice.
       }
-    }, 3000);
+    }, 10000);
 
     return () => clearInterval(id);
   }, []);
