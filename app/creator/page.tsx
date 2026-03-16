@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
 import { motion } from 'framer-motion';
@@ -12,6 +12,7 @@ import CreatorChart from '@/components/CreatorChart';
 import type { Project, ProjectStatus } from '@/lib/projects';
 import type { ChartPoint } from '@/components/CreatorChart';
 import { PROJECT_STATUS_LABEL } from '@/lib/projects';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 function SpinnerIcon({ className }: { className?: string }) {
   return (
@@ -64,6 +65,8 @@ export default function CreatorDashboard() {
   const [isDistributing, setIsDistributing] = useState(false);
   const [chartPoints, setChartPoints] = useState<ChartPoint[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
 
   const loadChartData = async () => {
     setChartLoading(true);
@@ -155,6 +158,43 @@ export default function CreatorDashboard() {
 
     setFormSubmitting(true);
     try {
+      // Verify reCAPTCHA for non-draft submissions.
+      if (!asDraft) {
+        if (!captchaToken) {
+          setFormError('Please confirm you are not a robot.');
+          setFormSubmitting(false);
+          return;
+        }
+        try {
+          const verifyRes = await fetch('/api/verify-captcha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: captchaToken }),
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok || !verifyData?.success) {
+            setFormError(
+              verifyData?.error ||
+                'Captcha verification failed. Please try again.'
+            );
+            if (recaptchaRef.current) {
+              recaptchaRef.current.reset();
+            }
+            setCaptchaToken(null);
+            setFormSubmitting(false);
+            return;
+          }
+        } catch {
+          setFormError('Captcha verification failed. Please try again.');
+          if (recaptchaRef.current) {
+            recaptchaRef.current.reset();
+          }
+          setCaptchaToken(null);
+          setFormSubmitting(false);
+          return;
+        }
+      }
+
       const token = await getAccessToken();
       if (!token) {
         setFormError('Please log in again.');
@@ -618,7 +658,14 @@ export default function CreatorDashboard() {
                   {formError}
                 </p>
               )}
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="pt-2">
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? ''}
+                  onChange={(token) => setCaptchaToken(token)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 pt-3">
                 <button
                   type="button"
                   onClick={() => submitProject(true)}
@@ -630,7 +677,7 @@ export default function CreatorDashboard() {
                 <button
                   type="button"
                   onClick={() => submitProject(false)}
-                  disabled={formSubmitting || !formImage}
+                  disabled={formSubmitting || !formImage || !captchaToken}
                   className="rounded-lg bg-red-600 hover:bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {formSubmitting ? 'Submitting…' : 'Submit for approval'}
