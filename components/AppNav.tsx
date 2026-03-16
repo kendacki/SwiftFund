@@ -42,13 +42,8 @@ export default function AppNav() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  const isAdmin =
-    !!user &&
-    Array.isArray(user?.emailAddresses) &&
-    user.emailAddresses.some(
-      (e: { emailAddress: string }) =>
-        e.emailAddress === 'brodymatthewa@gmail.com'
-    );
+  const email = (user as any)?.email as string | undefined;
+  const isAdmin = email === 'brodymatthewa@gmail.com';
 
   const SUBPAGE_LINKS = [
     { href: '/creator', label: 'Dashboard' },

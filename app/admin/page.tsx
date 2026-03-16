@@ -25,11 +25,8 @@ export default function AdminPage() {
   useEffect(() => {
     if (!ready) return;
 
-    const emailAddresses =
-      (user?.emailAddresses as { emailAddress: string }[] | undefined) ?? [];
-    const isAdmin = emailAddresses.some(
-      (e) => e.emailAddress === ADMIN_EMAIL
-    );
+    const email = (user as any)?.email as string | undefined;
+    const isAdmin = email === ADMIN_EMAIL;
 
     if (!isAdmin) {
       router.replace('/');
