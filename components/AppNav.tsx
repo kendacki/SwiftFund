@@ -106,8 +106,8 @@ export default function AppNav() {
                         onClick={() => setMenuOpen(false)}
                         className={`${base} ${
                           isActive
-                            ? 'text-red-300 bg-red-600/20'
-                            : 'text-red-400 hover:text-red-200 hover:bg-red-600/10'
+                            ? 'text-red-400 bg-red-500/10'
+                            : 'text-neutral-300 hover:text-white hover:bg-neutral-800/80'
                         }`}
                       >
                         {link.label}

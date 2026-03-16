@@ -1,8 +1,8 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { getPrivyClient } from '@/lib/privy';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { usePrivy } from '@privy-io/react-auth';
 
 const ADMIN_EMAIL = 'brodymatthewa@gmail.com';
 
@@ -65,34 +65,39 @@ const MOCK_PROJECTS: AdminProject[] = [
   },
 ];
 
-async function requireAdmin() {
-  const token = cookies().get('privy-token')?.value;
-  if (!token) {
-    redirect('/');
-  }
+export default function AdminPage() {
+  const { user, ready, authenticated } = usePrivy();
+  const router = useRouter();
 
-  const client = getPrivyClient();
-  let email: string | undefined;
+  useEffect(() => {
+    if (!ready) return;
 
-  try {
-    const claims = await client.verifyAuthToken(token);
-    const userId = (claims as { userId?: string }).userId;
+    const userEmail =
+      (user as any)?.email?.address ||
+      (user as any)?.google?.email ||
+      ((user as any)?.email as string | undefined) ||
+      '';
+    const isAdmin = userEmail === ADMIN_EMAIL;
 
-    if (userId) {
-      const user = await client.getUser(userId);
-      email = (user as any)?.email ?? (user as any)?.emailAddress ?? undefined;
+    if (!authenticated || !isAdmin) {
+      router.push('/');
     }
-  } catch {
-    redirect('/');
+  }, [ready, authenticated, user, router]);
+
+  if (!ready) {
+    return null;
   }
 
-  if (email !== ADMIN_EMAIL) {
-    redirect('/');
-  }
-}
+  const userEmail =
+    (user as any)?.email?.address ||
+    (user as any)?.google?.email ||
+    ((user as any)?.email as string | undefined) ||
+    '';
+  const isAdmin = userEmail === ADMIN_EMAIL;
 
-export default async function AdminPage() {
-  await requireAdmin();
+  if (!authenticated || !isAdmin) {
+    return null;
+  }
 
   const totalVolume = MOCK_PROJECTS.reduce((sum, p) => sum + p.raised, 0);
   const activeCreators = new Set(MOCK_PROJECTS.map((p) => p.creatorName)).size;
