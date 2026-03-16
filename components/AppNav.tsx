@@ -89,20 +89,42 @@ export default function AppNav() {
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-full mt-2 min-w-[180px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-xl py-2 z-[100]">
-                {SUBPAGE_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMenuOpen(false)}
-                    className={`font-heading block px-4 py-2.5 text-sm font-medium transition-colors ${
-                      pathname === link.href
-                        ? 'text-red-400 bg-red-500/10'
-                        : 'text-neutral-300 hover:text-white hover:bg-neutral-800/80'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {SUBPAGE_LINKS.map((link) => {
+                  const isActive = pathname === link.href;
+                  const isAdminLink = link.href === '/admin';
+                  const base =
+                    'font-heading block px-4 py-2.5 text-sm font-medium transition-colors';
+                  if (isAdminLink) {
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMenuOpen(false)}
+                        className={`${base} ${
+                          isActive
+                            ? 'text-red-300 bg-red-600/20'
+                            : 'text-red-400 hover:text-red-200 hover:bg-red-600/10'
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={`${base} ${
+                        isActive
+                          ? 'text-red-400 bg-red-500/10'
+                          : 'text-neutral-300 hover:text-white hover:bg-neutral-800/80'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
