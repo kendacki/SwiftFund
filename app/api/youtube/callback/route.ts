@@ -23,15 +23,19 @@ export async function GET(req: Request) {
     const error = url.searchParams.get('error');
 
     console.log('2. Code extracted:', code);
+    console.log('APP_URL env in callback:', APP_URL);
 
-    const redirectTarget = new URL('/creator', req.url);
+    const base = (APP_URL || '').replace(/\/$/, '');
+    const redirectTarget = `${base || ''}/creator`;
 
     if (error) {
       console.warn('YouTube OAuth error:', error);
+      console.log('Redirecting (error branch) to:', redirectTarget);
       return NextResponse.redirect(redirectTarget);
     }
 
     if (!code) {
+      console.log('No code present; redirecting to:', redirectTarget);
       return NextResponse.redirect(redirectTarget);
     }
 
@@ -61,7 +65,7 @@ export async function GET(req: Request) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
-    console.log('5. Redirecting to Creator Dashboard at:', redirectTarget.href);
+    console.log('5. Redirecting to Creator Dashboard at:', redirectTarget);
     return NextResponse.redirect(redirectTarget);
   } catch (err) {
     const message =

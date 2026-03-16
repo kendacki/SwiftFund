@@ -593,14 +593,15 @@ export default function CreatorDashboard() {
                       <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 mr-1" />
                       Live Sync Active
                     </button>
-                    <Button
-                      type="button"
-                      onClick={fetchYoutubeMetrics}
-                      disabled={ytLoading}
-                      className="text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {ytLoading ? 'Loading analytics…' : 'View Analytics'}
-                    </Button>
+                    <Link href="/creator/earnings">
+                      <Button
+                        type="button"
+                        disabled={false}
+                        className="text-xs sm:text-sm"
+                      >
+                        View Earnings
+                      </Button>
+                    </Link>
                   </div>
                 </div>
                 {ytError && (
