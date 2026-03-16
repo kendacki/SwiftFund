@@ -162,7 +162,7 @@ export default function PortfolioPage() {
 
           const swindToken = tokens.find((t) => t.token_id === SWIND_TOKEN_ID);
           if (swindToken && typeof swindToken.balance === 'number') {
-            const swind = swindToken.balance / 1e8;
+            const swind = swindToken.balance;
             if (!cancelled) setSwindBalance(swind);
           } else if (!cancelled) {
             setSwindBalance(0);
@@ -204,7 +204,7 @@ export default function PortfolioPage() {
             if (swindTransfer) {
               const raw = Number(swindTransfer.amount ?? 0);
               const sign = raw > 0 ? '+' : '';
-              const amt = Math.abs(raw) / 1e8;
+              const amt = Math.abs(raw);
               tokenType = 'SWIND';
               amountLabel = `${sign}${amt.toLocaleString(undefined, {
                 maximumFractionDigits: 4,
