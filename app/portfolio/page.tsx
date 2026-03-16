@@ -17,7 +17,7 @@ const SWIND_MOCK_PRICE = 0.05;
 // Logos in public/logos/
 const TOKENS = [
   { symbol: 'HBAR', name: 'Hedera', logo: '/logos/hedera.png' },
-  { symbol: 'SWIND', name: 'SwiftFund', logo: '/logos/swind.png' },
+  { symbol: 'SWIND', name: 'SwiftFund', logo: '/logos/swiftfund-logo.png' },
 ] as const;
 
 type TokenSymbol = (typeof TOKENS)[number]['symbol'];
@@ -385,7 +385,7 @@ export default function PortfolioPage() {
                       aria-hidden
                     />
                     <img
-                      src="/logos/swind.png"
+                      src="/logos/swiftfund-logo.png"
                       alt=""
                       className="h-6 w-6 rounded-full border-2 border-neutral-900 object-cover shrink-0"
                       aria-hidden
