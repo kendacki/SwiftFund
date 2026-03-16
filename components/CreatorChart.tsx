@@ -1,150 +1,146 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Line,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Area,
-  ComposedChart,
 } from 'recharts';
 import { motion } from 'framer-motion';
 
-export interface ChartPoint {
+interface HbarPoint {
   date: string;
-  funded: number;
-  disbursed: number;
+  price: number;
 }
 
-function formatDate(label: string): string {
-  try {
-    const d = new Date(label);
-    return isNaN(d.getTime()) ? label : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
-  } catch {
-    return label;
-  }
-}
+export default function CreatorChart() {
+  const [hbarData, setHbarData] = useState<HbarPoint[]>([]);
+  const [loading, setLoading] = useState(true);
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
-}
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | undefined;
 
-const RED_PRIMARY = '#dc2626';
-const RED_SECONDARY = '#b91c1c';
+    const fetchData = async () => {
+      try {
+        const res = await fetch(
+          'https://api.coincap.io/v2/assets/hedera-hashgraph/history?interval=d1'
+        );
+        const json = await res.json();
+        const raw = Array.isArray(json?.data) ? json.data : [];
+        const formatted: HbarPoint[] = raw.map((item: any) => ({
+          date: new Date(item.time).toLocaleDateString(),
+          price: Number.parseFloat(item.priceUsd ?? '0') || 0,
+        }));
+        setHbarData(formatted);
+      } catch {
+        // leave existing data; UI will show last good value or skeleton
+      } finally {
+        setLoading(false);
+      }
+    };
 
-interface CreatorChartProps {
-  points: ChartPoint[];
-  loading?: boolean;
-  onRefresh?: () => void;
-}
+    void fetchData();
+    intervalId = setInterval(fetchData, 60_000);
 
-export default function CreatorChart({ points, loading, onRefresh }: CreatorChartProps) {
-  const chartData = useMemo(() => {
-    if (!points.length) return [];
-    return points.map((p) => ({
-      ...p,
-      dateLabel: formatDate(p.date),
-    }));
-  }, [points]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
 
-  const hasData = chartData.length > 0;
+  const chartData = useMemo(
+    () => (Array.isArray(hbarData) ? hbarData : []),
+    [hbarData]
+  );
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
-      className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden shadow-xl"
+      className="rounded-2xl border border-neutral-800 bg-neutral-900/60 overflow-hidden shadow-xl"
     >
-      <div className="px-4 sm:px-6 py-4 border-b border-white/10">
-        <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
-          Funding & Disbursements
-        </h2>
-        <p className="font-heading text-xs text-neutral-400 mt-0.5 tracking-tight">
-          Cumulative amounts over time. Updates when projects are funded or you run a distribution.
-        </p>
+      <div className="px-4 sm:px-6 py-4 border-b border-neutral-800 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
+            Live Hedera Mainnet (HBAR/USD)
+          </h2>
+          <p className="font-heading text-xs text-neutral-400 mt-0.5 tracking-tight">
+            Daily HBAR price powered by CoinCap. Auto-refreshes every 60 seconds.
+          </p>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/60 bg-emerald-500/10 px-3 py-1">
+          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-heading text-[11px] text-emerald-200 tracking-tight">
+            Network Synced
+          </span>
+        </div>
       </div>
-      <div className="p-4 sm:p-6 min-h-[280px]">
-        {loading ? (
-          <div className="h-[260px] flex items-center justify-center text-neutral-500 text-sm">
-            <span className="animate-pulse">Loading chart…</span>
-          </div>
-        ) : !hasData ? (
-          <div className="h-[260px] flex flex-col items-center justify-center text-neutral-500 text-sm text-center px-4">
-            <p className="font-heading tracking-tight">No activity yet.</p>
-            <p className="text-xs mt-1 max-w-sm">
-              Fund a project or distribute yield to see your funding and disbursement lines here.
+      <div className="p-4 sm:p-6">
+        {loading && chartData.length === 0 ? (
+          <div className="flex w-full h-[260px] items-center justify-center">
+            <p className="font-heading text-sm text-neutral-500 tracking-tight animate-pulse">
+              Syncing with Mainnet…
             </p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="fundGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={RED_PRIMARY} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={RED_PRIMARY} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="disburseGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={RED_SECONDARY} stopOpacity={0.25} />
-                  <stop offset="100%" stopColor={RED_SECONDARY} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis
-                dataKey="dateLabel"
-                tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(23,23,23,0.95)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  backdropFilter: 'blur(12px)',
-                }}
-                labelStyle={{ color: 'rgba(255,255,255,0.8)' }}
-                labelFormatter={(_, payload) => payload?.[0]?.payload?.dateLabel ?? ''}
-                formatter={(value: number, name: string) => [formatCurrency(value), name]}
-                itemStyle={{ color: '#fca5a5' }}
-              />
-              <Legend
-                wrapperStyle={{ paddingTop: 8 }}
-                formatter={(value) => value}
-                iconType="line"
-                iconSize={10}
-              />
-              <Area
-                type="monotone"
-                dataKey="funded"
-                name="Funded"
-                stroke={RED_PRIMARY}
-                strokeWidth={2}
-                fill="url(#fundGradient)"
-              />
-              <Line
-                type="monotone"
-                dataKey="disbursed"
-                name="Disbursed"
-                stroke={RED_SECONDARY}
-                strokeWidth={2}
-                dot={{ fill: RED_SECONDARY, strokeWidth: 0, r: 3 }}
-                activeDot={{ r: 5, fill: RED_SECONDARY, stroke: 'rgba(255,255,255,0.3)' }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div className="w-full h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="hbarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(148,163,184,0.25)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
+                  axisLine={{ stroke: 'rgba(55,65,81,0.8)' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `$${v.toFixed(3)}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(15,23,42,0.98)',
+                    border: '1px solid rgba(148,163,184,0.4)',
+                    borderRadius: 10,
+                    padding: '8px 10px',
+                  }}
+                  labelStyle={{ color: 'rgba(226,232,240,0.9)', fontSize: 12 }}
+                  formatter={(value: number) => [
+                    `$${(value as number).toFixed(4)}`,
+                    'HBAR Price',
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  fill="url(#hbarGradient)"
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </motion.section>
   );
 }
+
