@@ -133,10 +133,10 @@ export default function CreatorEarningsPage() {
               Earnings &amp; Yield Analytics
             </h1>
             <p className="mt-2 font-heading text-xs sm:text-sm text-neutral-400 max-w-2xl tracking-tight">
-              Private analytics with a Web3-native yield projection layer. If your
-              channel is not monetized yet, SwiftFund will automatically use
-              high-quality placeholder data so you can still experience the
-              dashboard.
+              Track your channel&apos;s growth and see exactly how your earnings are
+              shared with your funders. <span className="italic">Not monetized on
+              YouTube yet? We’ve enabled a live Demo Mode with sample data so you
+              can explore the platform while you grow!</span>
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -243,9 +243,9 @@ export default function CreatorEarningsPage() {
                       Hover for exact values
                     </p>
                   </div>
-                  <div className="h-[320px]">
+                  <div className="w-full h-[350px] min-h-[300px] mt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 8, left: 0, right: 10, bottom: 0 }}>
+                      <AreaChart data={chartData || []} margin={{ top: 8, left: 0, right: 10, bottom: 0 }}>
                         <defs>
                           <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#A78BFA" stopOpacity={0.35} />
