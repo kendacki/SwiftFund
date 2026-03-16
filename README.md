@@ -107,3 +107,9 @@ BLOB_READ_WRITE_TOKEN=
 # Project approvals (header: x-approver-secret)
 APPROVER_SECRET=
 ```
+
+## V2 Roadmap & Monetization (Post-Hackathon)
+
+- **Automated Protocol Fees:** Implement a 5% smart contract fee on successful raises (Success Fee) and a 5% fee on all yield redistributions (Performance Fee), with both routed to the SwiftFund DAO Treasury.
+- **Basis Point (BPS) Architecture:** Upgrade the treasury contract to support dynamic fee adjustments (in basis points) controlled by decentralized governance, enabling fine-grained tuning of protocol economics over time.
+- **SaucerSwap Liquidity:** Seed a liquidity pool on SaucerSwap to allow funders to trade their SWIND yield-bearing tokens on the open market, improving exit options and secondary liquidity for backers.
