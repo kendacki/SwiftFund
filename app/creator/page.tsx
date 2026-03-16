@@ -71,6 +71,7 @@ export default function CreatorDashboard() {
   const [ytMetrics, setYtMetrics] = useState<{ revenue: number; views: number } | null>(null);
   const [ytLoading, setYtLoading] = useState(false);
   const [ytError, setYtError] = useState<string | null>(null);
+  const [hasYoutubeTokens, setHasYoutubeTokens] = useState(false);
 
   const loadChartData = async () => {
     setChartLoading(true);
@@ -119,6 +120,21 @@ export default function CreatorDashboard() {
     // immediately after returning from OAuth. Errors are suppressed here.
     void fetchYoutubeMetricsInternal(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Lightweight check: if the YouTube OAuth cookie exists, treat as linked for UI purposes.
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/youtube/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        setHasYoutubeTokens(Boolean(data?.linked));
+      } catch {
+        // ignore
+      }
+    };
+    void checkStatus();
   }, []);
 
   const anyYoutubeLinked = projects.some((p) => p.youtubeLinked);
@@ -571,7 +587,7 @@ export default function CreatorDashboard() {
             </p>
           </div>
           <div className="p-4 sm:p-6 space-y-4">
-            {!projectsLoading && (anyYoutubeLinked || ytMetrics) ? (
+            {!projectsLoading && (anyYoutubeLinked || ytMetrics || hasYoutubeTokens) ? (
               <>
                 <div className="rounded-lg border border-emerald-600/40 bg-emerald-500/5 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-2">
