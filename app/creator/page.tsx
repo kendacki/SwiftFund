@@ -594,7 +594,7 @@ export default function CreatorDashboard() {
                     <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
                     <div>
                       <p className="font-heading text-sm font-semibold text-emerald-200 tracking-tight">
-                        ✅ YouTube Analytics Connected
+                        YouTube Analytics Connected
                       </p>
                       <p className="font-heading text-xs text-emerald-200/80 tracking-tight">
                         Live sync active for your linked channel.
