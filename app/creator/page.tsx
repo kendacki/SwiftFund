@@ -10,7 +10,6 @@ import { usePrivy } from '@privy-io/react-auth';
 import DashboardCard from '@/components/DashboardCard';
 import CreatorChart from '@/components/CreatorChart';
 import type { Project, ProjectStatus } from '@/lib/projects';
-import type { ChartPoint } from '@/components/CreatorChart';
 import { PROJECT_STATUS_LABEL } from '@/lib/projects';
 import ReCAPTCHA from 'react-google-recaptcha';
 
@@ -63,8 +62,6 @@ export default function CreatorDashboard() {
   const [formError, setFormError] = useState<string | null>(null);
   const [treasuryStatus, setTreasuryStatus] = useState<string | null>(null);
   const [isDistributing, setIsDistributing] = useState(false);
-  const [chartPoints, setChartPoints] = useState<ChartPoint[]>([]);
-  const [chartLoading, setChartLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA | null>(null);
   const [hasConsented, setHasConsented] = useState(false);
@@ -72,26 +69,6 @@ export default function CreatorDashboard() {
   const [ytLoading, setYtLoading] = useState(false);
   const [ytError, setYtError] = useState<string | null>(null);
   const [hasYoutubeTokens, setHasYoutubeTokens] = useState(false);
-
-  const loadChartData = async () => {
-    setChartLoading(true);
-    try {
-      const token = await getAccessToken();
-      if (!token) {
-        setChartPoints([]);
-        return;
-      }
-      const res = await fetch('/api/creator/chart', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setChartPoints(Array.isArray(data?.points) ? data.points : []);
-    } catch {
-      setChartPoints([]);
-    } finally {
-      setChartLoading(false);
-    }
-  };
 
   const loadMyProjects = async () => {
     setProjectsLoading(true);
@@ -115,7 +92,6 @@ export default function CreatorDashboard() {
 
   useEffect(() => {
     loadMyProjects();
-    loadChartData();
     // Attempt a silent analytics refresh so the UI reflects the latest link state
     // immediately after returning from OAuth. Errors are suppressed here.
     void fetchYoutubeMetricsInternal(false);
@@ -433,8 +409,8 @@ export default function CreatorDashboard() {
           </Link>
         </div>
 
-        {/* Funding & Disbursements Chart */}
-        <CreatorChart points={chartPoints} loading={chartLoading} />
+        {/* Live Hedera Mainnet Chart */}
+        <CreatorChart />
 
         {/* My Projects */}
         <section className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">
