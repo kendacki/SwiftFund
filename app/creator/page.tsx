@@ -356,7 +356,6 @@ export default function CreatorDashboard() {
       setTreasuryStatus(
         `Distribution succeeded. Status: ${data.status}, Tx: ${data.transactionId}`
       );
-      loadChartData();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Distribution failed.';
       const friendly =
