@@ -67,6 +67,7 @@ export default function CreatorDashboard() {
   const [chartLoading, setChartLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA | null>(null);
+  const [hasConsented, setHasConsented] = useState(false);
 
   const loadChartData = async () => {
     setChartLoading(true);
@@ -499,6 +500,67 @@ export default function CreatorDashboard() {
                 {treasuryStatus}
               </p>
             )}
+          </div>
+        </section>
+
+        {/* YouTube Analytics Authorization & Disclaimer */}
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden mt-6">
+          <div className="px-4 sm:px-6 py-4 border-b border-neutral-800">
+            <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
+              YouTube Analytics Connection
+            </h2>
+            <p className="font-heading text-xs text-neutral-400 mt-1 max-w-xl tracking-tight">
+              Link your YouTube channel to surface verified ad revenue and views directly inside your SwiftFund dashboard.
+            </p>
+          </div>
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3 sm:p-4">
+              <p className="font-heading text-xs text-neutral-400 mb-2 tracking-tight">
+                By connecting your YouTube Analytics account, you acknowledge and agree to the following:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-neutral-500">
+                <li>
+                  <span className="font-semibold text-neutral-300">Read-Only Access:</span>{' '}
+                  SwiftFund only requests read-only access to your YouTube Analytics. We cannot edit, publish, or delete any content on your channel.
+                </li>
+                <li>
+                  <span className="font-semibold text-neutral-300">Data Usage:</span>{' '}
+                  Analytics data is used strictly for yield verification, performance reporting, and improving the transparency of your revenue-based financing terms.
+                </li>
+                <li>
+                  <span className="font-semibold text-neutral-300">Beta Liability:</span>{' '}
+                  SwiftFund is a beta-stage protocol. By connecting your YouTube account, you agree to use the integration at your own risk and hold SwiftFund harmless for any issues arising from third-party API changes or outages.
+                </li>
+              </ul>
+            </div>
+            <div className="flex items-start gap-2">
+              <input
+                id="youtube-consent"
+                type="checkbox"
+                checked={hasConsented}
+                onChange={(e) => setHasConsented(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-red-600 focus:ring-red-500"
+              />
+              <label
+                htmlFor="youtube-consent"
+                className="font-heading text-xs sm:text-sm text-neutral-400 tracking-tight"
+              >
+                I have read and agree to the YouTube Analytics connection terms.
+              </label>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!hasConsented) return;
+                  window.location.href = '/api/youtube/auth';
+                }}
+                disabled={!hasConsented}
+                className="min-w-[11rem] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Link YouTube Analytics
+              </Button>
+            </div>
           </div>
         </section>
       </div>
