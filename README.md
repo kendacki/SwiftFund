@@ -10,7 +10,7 @@
 
 SwiftFund bridges the gap between creators and their communities. Traditional crowdfunding platforms allow users to back projects, but they rarely allow those early believers to share in the long-term financial success of the product.
 
-We built SwiftFund to change that. By leveraging smart contracts, SwiftFund allows creators to raise capital in HBAR, while automatically and mathematically distributing a share of their future revenue back to the original funders. It is transparent, automated, and built for scale.
+We built SwiftFund to change that. By leveraging smart contracts, SwiftFund allows creators to raise capital in HBAR, while automatically and proportionally distributing a share of their future revenue back to the original funders. It is transparent, automated, and built for scale.
 
 ## How It Works
 
