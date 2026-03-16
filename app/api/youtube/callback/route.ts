@@ -16,11 +16,15 @@ export async function GET(req: Request) {
       );
     }
 
+    console.log('1. Callback hit with URL:', req.url);
+
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
 
-    const redirectTarget = `${APP_URL.replace(/\/$/, '')}/creator`;
+    console.log('2. Code extracted:', code);
+
+    const redirectTarget = new URL('/creator', req.url);
 
     if (error) {
       console.warn('YouTube OAuth error:', error);
@@ -41,6 +45,8 @@ export async function GET(req: Request) {
 
     const { tokens } = await oauth2Client.getToken(code);
 
+    console.log('3. Tokens received from Google');
+
     const tokenPayload = {
       access_token: tokens.access_token ?? null,
       refresh_token: tokens.refresh_token ?? null,
@@ -55,6 +61,7 @@ export async function GET(req: Request) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
+    console.log('5. Redirecting to Creator Dashboard at:', redirectTarget.href);
     return NextResponse.redirect(redirectTarget);
   } catch (err) {
     const message =

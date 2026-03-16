@@ -115,14 +115,21 @@ export default function CreatorDashboard() {
   useEffect(() => {
     loadMyProjects();
     loadChartData();
+    // Attempt a silent analytics refresh so the UI reflects the latest link state
+    // immediately after returning from OAuth. Errors are suppressed here.
+    void fetchYoutubeMetricsInternal(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const anyYoutubeLinked = projects.some((p) => p.youtubeLinked);
 
-  const fetchYoutubeMetrics = async () => {
+  const fetchYoutubeMetricsInternal = async (showErrors: boolean) => {
     setYtLoading(true);
-    setYtError(null);
+    if (!showErrors) {
+      setYtError(null);
+    } else {
+      setYtError(null);
+    }
     try {
       const token = await getAccessToken();
       if (!token) {
@@ -135,7 +142,9 @@ export default function CreatorDashboard() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setYtError(data?.error || 'Failed to load YouTube analytics.');
+        if (showErrors) {
+          setYtError(data?.error || 'Failed to load YouTube analytics.');
+        }
         setYtMetrics(null);
         setYtLoading(false);
         return;
@@ -145,13 +154,22 @@ export default function CreatorDashboard() {
         views: Number(data.views ?? 0),
       });
     } catch (err) {
-      setYtError(
-        err instanceof Error ? err.message : 'Failed to load YouTube analytics.'
-      );
+      if (showErrors) {
+        setYtError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load YouTube analytics.'
+        );
+      }
       setYtMetrics(null);
     } finally {
       setYtLoading(false);
     }
+  };
+
+  // Public handler for the "View Analytics" button (shows errors).
+  const fetchYoutubeMetrics = () => {
+    void fetchYoutubeMetricsInternal(true);
   };
 
   const openCreate = () => {
@@ -553,7 +571,7 @@ export default function CreatorDashboard() {
             </p>
           </div>
           <div className="p-4 sm:p-6 space-y-4">
-            {!projectsLoading && anyYoutubeLinked ? (
+            {!projectsLoading && (anyYoutubeLinked || ytMetrics) ? (
               <>
                 <div className="rounded-lg border border-emerald-600/40 bg-emerald-500/5 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-2">
