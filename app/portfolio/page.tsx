@@ -7,6 +7,10 @@ import { ethers } from 'ethers';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/Button';
 import { claimYield } from '@/lib/fundCreator';
+import {
+  TREASURY_EVM_ADDRESS,
+  SWIFT_FUND_TREASURY_ABI,
+} from '@/constants/contracts';
 
 // Fixed SWIND token ID on Hedera testnet.
 const SWIND_TOKEN_ID = '0.0.8216024';
