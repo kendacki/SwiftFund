@@ -25,6 +25,12 @@ export interface Project {
   accountInfoPdfUrl?: string;
   /** Unique funder count for this project (capped at 200 on-chain). From contract or backend. */
   funderCount?: number;
+  /** Verified 30-day YouTube views fetched via Analytics API. */
+  verifiedYoutubeViews?: number;
+  /** Verified 30-day estimated YouTube revenue (fiat) fetched via Analytics API. */
+  verifiedYoutubeRevenue?: number;
+  /** Whether the creator has linked YouTube Analytics for this project. */
+  youtubeLinked?: boolean;
 }
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {

@@ -23,15 +23,8 @@ function MenuGridIcon({ className }: { className?: string }) {
   );
 }
 
-const SUBPAGE_LINKS = [
-  { href: '/creator', label: 'Dashboard' },
-  { href: '/discover', label: 'Discover' },
-  { href: '/portfolio', label: 'Wallet' },
-  { href: '/faq', label: 'FAQ' },
-];
-
 export default function AppNav() {
-  const { authenticated, ready } = usePrivy();
+  const { authenticated, ready, user } = usePrivy();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -48,6 +41,22 @@ export default function AppNav() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
+
+  const isAdmin =
+    !!user &&
+    Array.isArray(user?.emailAddresses) &&
+    user.emailAddresses.some(
+      (e: { emailAddress: string }) =>
+        e.emailAddress === 'brodymatthewa@gmail.com'
+    );
+
+  const SUBPAGE_LINKS = [
+    { href: '/creator', label: 'Dashboard' },
+    { href: '/discover', label: 'Discover' },
+    { href: '/portfolio', label: 'Wallet' },
+    { href: '/faq', label: 'FAQ' },
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin Dashboard' }] : []),
+  ];
 
   const logoHref =
     !authenticated && pathname === '/discover' ? '/' : '/portfolio';

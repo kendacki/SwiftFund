@@ -87,6 +87,8 @@ function toCardProps(p: Project): ProjectCardData {
     },
     earningsDistributionPercent: p.earningsDistributionPercent,
     funderCount,
+    youtubeLinked: p.youtubeLinked ?? false,
+    verifiedYoutubeViews: p.verifiedYoutubeViews,
   };
 }
 

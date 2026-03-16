@@ -20,6 +20,10 @@ export interface ProjectCardProps {
   earningsDistributionPercent?: number;
   /** Unique funder count (capped at MAX_FUNDERS). When >= MAX_FUNDERS, Fund button becomes Sold Out. */
   funderCount?: number;
+  /** Whether this project has linked YouTube Analytics. */
+  youtubeLinked?: boolean;
+  /** Verified 30-day YouTube views for this project (public, non-sensitive). */
+  verifiedYoutubeViews?: number;
   onFundClick: (projectId: string) => void;
 }
 
@@ -32,6 +36,8 @@ function ProjectCard({
   stats,
   earningsDistributionPercent,
   funderCount = 0,
+  youtubeLinked = false,
+  verifiedYoutubeViews,
   onFundClick,
 }: ProjectCardProps) {
   const safeProgress = Math.max(0, Math.min(100, progressPercent));
@@ -61,6 +67,20 @@ function ProjectCard({
         <p className="font-heading text-xs text-red-400/90 mb-2 tracking-tight">
           {earningsDistributionPercent}% of earnings to backers
         </p>
+      )}
+
+      {youtubeLinked && (
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1">
+          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-heading text-[11px] font-medium text-emerald-200 tracking-tight">
+            ✅ Verified Creator Data
+          </span>
+          {typeof verifiedYoutubeViews === 'number' && verifiedYoutubeViews > 0 && (
+            <span className="font-heading text-[11px] text-emerald-200/80 tracking-tight">
+              · {verifiedYoutubeViews.toLocaleString()} views (30d)
+            </span>
+          )}
+        </div>
       )}
 
       <div className="mb-3">

@@ -18,6 +18,9 @@ type Row = {
   earnings_distribution_percent: number | null;
   account_info_pdf_url: string | null;
   funder_count?: number;
+  verified_youtube_views?: number | null;
+  verified_youtube_revenue?: number | null;
+  youtube_linked?: boolean | null;
 };
 
 function rowToProject(r: Row): Project {
@@ -38,6 +41,9 @@ function rowToProject(r: Row): Project {
     earningsDistributionPercent: r.earnings_distribution_percent ?? undefined,
     accountInfoPdfUrl: r.account_info_pdf_url ?? undefined,
     funderCount: r.funder_count ?? 0,
+    verifiedYoutubeViews: r.verified_youtube_views ?? undefined,
+    verifiedYoutubeRevenue: r.verified_youtube_revenue ?? undefined,
+    youtubeLinked: r.youtube_linked ?? undefined,
   };
 }
 
@@ -81,6 +87,9 @@ export async function insertProject(project: Project): Promise<void> {
     tags: project.tags ?? ['all'],
     earnings_distribution_percent: project.earningsDistributionPercent ?? null,
     account_info_pdf_url: project.accountInfoPdfUrl ?? null,
+    verified_youtube_views: project.verifiedYoutubeViews ?? null,
+    verified_youtube_revenue: project.verifiedYoutubeRevenue ?? null,
+    youtube_linked: project.youtubeLinked ?? null,
   };
   const { error } = await supabase.from('projects').insert(row as never);
   if (error) {
@@ -132,4 +141,26 @@ export async function getProjectById(projectId: string): Promise<Project | null>
   const { data, error } = await supabase.from('projects').select('*').eq('id', projectId).single();
   if (error || !data) return null;
   return rowToProject(data as Row);
+}
+
+/** Update YouTube metrics for all projects owned by a creator. */
+export async function updateYoutubeMetricsForCreator(
+  creatorId: string,
+  metrics: { revenue: number; views: number; linked: boolean }
+): Promise<void> {
+  const supabase = getSupabase();
+  const updatePayload = {
+    verified_youtube_revenue: metrics.revenue,
+    verified_youtube_views: metrics.views,
+    youtube_linked: metrics.linked,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase
+    .from('projects')
+    .update(updatePayload as never)
+    .eq('creator_id', creatorId);
+  if (error) {
+    console.error('updateYoutubeMetricsForCreator error:', error);
+    throw error;
+  }
 }

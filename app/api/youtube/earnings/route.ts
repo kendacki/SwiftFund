@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { google } from 'googleapis';
+import { getPrivyClient } from '@/lib/privy';
+import { updateYoutubeMetricsForCreator } from '@/lib/projectsDb';
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -9,7 +11,16 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function GET() {
+async function getAuthUserId(req: Request): Promise<string | null> {
+  const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
+  if (!authToken) return null;
+  return getPrivyClient()
+    .verifyAuthToken(authToken)
+    .then((claims) => (claims as { userId?: string }).userId ?? null)
+    .catch(() => null);
+}
+
+export async function GET(req: Request) {
   try {
     if (!CLIENT_ID || !CLIENT_SECRET) {
       console.error('Google OAuth env vars missing');
@@ -17,6 +28,11 @@ export async function GET() {
         { error: 'Google OAuth is not configured.' },
         { status: 500 }
       );
+    }
+
+    const userId = await getAuthUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const tokenCookie = cookies().get('yt_tokens');
@@ -71,6 +87,13 @@ export async function GET() {
       revenue = typeof rev === 'number' ? rev : Number(rev) || 0;
       views = typeof v === 'number' ? v : Number(v) || 0;
     }
+
+    // Persist metrics for all projects owned by this creator.
+    await updateYoutubeMetricsForCreator(userId, {
+      revenue,
+      views,
+      linked: true,
+    });
 
     return NextResponse.json({ revenue, views });
   } catch (err) {
