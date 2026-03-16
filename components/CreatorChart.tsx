@@ -1,282 +1,263 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Area,
   AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
+  Area,
   XAxis,
   YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
 } from 'recharts';
-import { motion } from 'framer-motion';
 
 export interface ChartPoint {
-  name?: string;
-  date?: string;
-  value?: number;
-  revenue?: number;
-  views?: number;
-  [key: string]: any;
-}
-
-type Timeframe = '1H' | '1D' | '1M' | '1Y';
-
-interface HbarPoint {
   time: string;
   price: number;
+  dateStr: string;
 }
 
-interface CreatorChartProps {
-  points?: ChartPoint[];
-  loading?: boolean;
-  onRefresh?: () => void;
-}
+export default function CreatorChart() {
+  const [timeframe, setTimeframe] = useState<'1H' | '1D' | '1M' | '1Y'>('1D');
+  const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  const [currentPrice, setCurrentPrice] = useState<number>(0);
+  const [priceChange, setPriceChange] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-export default function CreatorChart(_props: CreatorChartProps) {
-  const [timeframe, setTimeframe] = useState<Timeframe>('1D');
-  const [chartData, setChartData] = useState<HbarPoint[]>([]);
-  const [currentPrice, setCurrentPrice] = useState(0);
-  const [priceChange, setPriceChange] = useState<{
-    amount: number;
-    percentage: number;
-    isPositive: boolean;
-  }>({ amount: 0, percentage: 0, isPositive: true });
-
-  // Map timeframe to CoinCap interval
-  const getIntervalForTimeframe = (tf: Timeframe): string => {
-    switch (tf) {
-      case '1H':
-        return 'm1';
-      case '1D':
-        return 'm15';
-      case '1M':
-        return 'h12';
-      case '1Y':
-        return 'd1';
-      default:
-        return 'm15';
-    }
-  };
-
-  // 1) Historical fetch whenever timeframe changes
+  // 1. FETCH HISTORICAL DATA (The Chart Line)
   useEffect(() => {
-    const fetchHistorical = async () => {
+    let isMounted = true;
+
+    const fetchHistory = async () => {
+      setIsLoading(true);
       try {
-        const interval = getIntervalForTimeframe(timeframe);
-        const res = await fetch(
-          `https://api.coincap.io/v2/assets/hedera-hashgraph/history?interval=${interval}`
-        );
-        const json = await res.json();
-        const raw = Array.isArray(json?.data) ? json.data : [];
+        const end = Date.now();
+        let start = end;
+        let interval = 'm15';
 
-        const mapped: HbarPoint[] = raw.map((pt: any) => {
-          const d = new Date(pt.time);
-          const timeLabel =
-            timeframe === '1H' || timeframe === '1D'
-              ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : d.toLocaleDateString();
-          return {
-            time: timeLabel,
-            price: Number.parseFloat(pt.priceUsd ?? '0') || 0,
-          };
-        });
-
-        if (!mapped.length) return;
-
-        // Slice to a reasonable recent window
-        let windowed = mapped;
-        if (timeframe === '1H') windowed = mapped.slice(-60);
-        else if (timeframe === '1D') windowed = mapped.slice(-96);
-        else if (timeframe === '1M') windowed = mapped.slice(-60);
-        else if (timeframe === '1Y') windowed = mapped.slice(-365);
-
-        setChartData(windowed);
-
-        const first = windowed[0]?.price ?? 0;
-        const last = windowed[windowed.length - 1]?.price ?? 0;
-        if (first > 0) {
-          const amount = last - first;
-          const percentage = (amount / first) * 100;
-          setPriceChange({
-            amount,
-            percentage,
-            isPositive: amount >= 0,
-          });
+        if (timeframe === '1H') {
+          start = end - 3600000;
+          interval = 'm1';
         }
-        setCurrentPrice(last);
+        if (timeframe === '1D') {
+          start = end - 86400000;
+          interval = 'm15';
+        }
+        if (timeframe === '1M') {
+          start = end - 2592000000;
+          interval = 'h12';
+        }
+        if (timeframe === '1Y') {
+          start = end - 31536000000;
+          interval = 'd1';
+        }
+
+        const url = `https://api.coincap.io/v2/assets/hedera-hashgraph/history?interval=${interval}&start=${start}&end=${end}`;
+
+        const res = await fetch(url, { cache: 'no-store' });
+        const json = await res.json();
+
+        if (json.data && Array.isArray(json.data) && isMounted) {
+          const formattedData: ChartPoint[] = json.data.map((d: any) => ({
+            time: new Date(d.time).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            dateStr: new Date(d.time).toLocaleDateString(),
+            price: parseFloat(d.priceUsd),
+          }));
+
+          setChartData(formattedData);
+
+          if (formattedData.length > 0) {
+            const firstPrice = formattedData[0].price;
+            const lastPrice = formattedData[formattedData.length - 1].price;
+            const change = ((lastPrice - firstPrice) / firstPrice) * 100;
+            setPriceChange(change);
+          }
+        }
       } catch (error) {
-        console.error('CoinCap API Error (history):', error);
-        // On failure, leave existing data so chart remains visible.
+        console.error('Failed to fetch historical HBAR data:', error);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    void fetchHistorical();
+    fetchHistory();
+
+    return () => {
+      isMounted = false;
+    };
   }, [timeframe]);
 
-  // 2) High-frequency live ticker (3s)
+  // 2. FETCH LIVE TICKER (The Heartbeat)
   useEffect(() => {
-    const id = setInterval(async () => {
+    let isMounted = true;
+
+    const fetchLivePrice = async () => {
       try {
         const res = await fetch(
-          'https://api.coincap.io/v2/assets/hedera-hashgraph'
+          'https://api.coincap.io/v2/assets/hedera-hashgraph',
+          { cache: 'no-store' }
         );
         const json = await res.json();
-        const price = Number.parseFloat(json?.data?.priceUsd ?? '0') || 0;
-        if (!price) return;
 
-        setCurrentPrice(price);
-        setChartData((prev) => {
-          if (!prev.length) return prev;
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            price,
-          };
-          return updated;
-        });
+        if (json.data && json.data.priceUsd && isMounted) {
+          const livePrice = parseFloat(json.data.priceUsd);
+          setCurrentPrice(livePrice);
+
+          setChartData((prev) => {
+            if (prev.length === 0) return prev;
+            const newData = [...prev];
+            newData[newData.length - 1].price = livePrice;
+            return newData;
+          });
+        }
       } catch (error) {
-        console.error('CoinCap API Error (ticker):', error);
-        // Ignore this beat; keep existing chartData/currentPrice.
+        console.error('Failed to fetch live HBAR price:', error);
       }
-    }, 10000);
+    };
 
-    return () => clearInterval(id);
+    // Fetch immediately, then every 10 seconds
+    fetchLivePrice();
+    const intervalId = setInterval(fetchLivePrice, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
-  const chartSeries = useMemo(
-    () => (Array.isArray(chartData) ? chartData : []),
-    [chartData]
-  );
+  // 3. RENDER THE UI
+  const isPositive = priceChange >= 0;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
-      className="rounded-2xl border border-neutral-800 bg-neutral-900/60 overflow-hidden shadow-xl"
-    >
-      <div className="px-4 sm:px-6 py-4 border-b border-neutral-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="w-full bg-[#0a0a0a] border border-gray-800 rounded-2xl p-6 font-sans">
+      {/* Header & KPIs */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
-            Live Hedera Mainnet (HBAR/USD)
-          </h2>
-          <p className="font-heading text-xs text-neutral-400 mt-0.5 tracking-tight">
-            Live HBAR price feed from CoinCap, auto-updating every 3 seconds.
-          </p>
-          <p className="mt-1 font-heading text-xs text-emerald-300 tracking-tight">
-            Current price:{' '}
-            <span className="font-semibold">
-              {currentPrice ? `$${currentPrice.toFixed(4)}` : '—'}
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-xl font-bold text-white">Live Hedera Network</h2>
+            <div className="flex items-center gap-1 bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-xs font-medium border border-green-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              Mainnet Synced
+            </div>
+          </div>
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl font-bold text-white">
+              {currentPrice > 0 ? `$${currentPrice.toFixed(4)}` : '...'}
             </span>
-            {priceChange.amount !== 0 && (
-              <span
-                className={`ml-2 ${
-                  priceChange.isPositive ? 'text-emerald-400' : 'text-red-400'
-                }`}
-              >
-                {priceChange.isPositive ? '+' : '-'}
-                {Math.abs(priceChange.percentage).toFixed(2)}%
-              </span>
-            )}
-          </p>
+            <span
+              className={`font-medium ${
+                isPositive ? 'text-green-400' : 'text-red-400'
+              }`}
+            >
+              {isPositive ? '+' : ''}
+              {priceChange.toFixed(2)}%
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/60 bg-emerald-500/10 px-3 py-1">
-            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-heading text-[11px] text-emerald-200 tracking-tight">
-              Network Synced
-            </span>
-          </div>
-          <div className="inline-flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-950/80 p-1">
-            {(
-              [
-                { key: '1H', label: 'Hourly' },
-                { key: '1D', label: 'Daily' },
-                { key: '1M', label: 'Monthly' },
-                { key: '1Y', label: 'Yearly' },
-              ] as const
-            ).map((t) => {
-              const active = timeframe === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setTimeframe(t.key)}
-                  className={[
-                    'px-2.5 py-1 rounded-md text-[11px] font-heading tracking-tight transition-colors',
-                    active
-                      ? 'bg-white text-neutral-950'
-                      : 'text-neutral-300 hover:text-white hover:bg-neutral-800',
-                  ].join(' ')}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+
+        {/* Timeframe Toggles */}
+        <div className="flex bg-[#111] border border-gray-800 rounded-lg p-1">
+          {['1H', '1D', '1M', '1Y'].map((tf) => (
+            <button
+              key={tf}
+              onClick={() => setTimeframe(tf as any)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                timeframe === tf
+                  ? 'bg-gray-800 text-white shadow-sm'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+              }`}
+            >
+              {tf}
+            </button>
+          ))}
         </div>
       </div>
-      <div className="p-4 sm:p-6">
-        <div className="w-full h-[260px]">
+
+      {/* The Chart Area */}
+      <div className="w-full h-[350px]">
+        {isLoading ? (
+          <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-[#111] rounded-xl border border-gray-800/50">
+            <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-sm font-medium animate-pulse">
+              Establishing secure feed...
+            </p>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="w-full h-full flex items-center justify-center text-red-400 bg-red-400/10 rounded-xl border border-red-500/20">
+            Connection Interrupted. Retrying...
+          </div>
+        ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartSeries}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+            >
               <defs>
-                <linearGradient id="hbarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={isPositive ? '#10b981' : '#ef4444'}
+                    stopOpacity={0.4}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={isPositive ? '#10b981' : '#ef4444'}
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
+
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="rgba(148,163,184,0.25)"
                 vertical={false}
+                stroke="#262626"
               />
+
               <XAxis
-                dataKey="time"
-                tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
-                axisLine={{ stroke: 'rgba(55,65,81,0.8)' }}
+                dataKey={timeframe === '1D' || timeframe === '1H' ? 'time' : 'dateStr'}
+                stroke="#52525b"
+                fontSize={12}
                 tickLine={false}
-              />
-              <YAxis
-                type="number"
-                domain={['dataMin', 'dataMax']}
-                allowDataOverflow={true}
-                hide={false}
-                width={60}
-                tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
                 axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `$${(v as number).toFixed(4)}`}
+                minTickGap={30}
               />
+
+              <YAxis
+                domain={['dataMin', 'dataMax']}
+                stroke="#52525b"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `$${value.toFixed(4)}`}
+                allowDataOverflow
+              />
+
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(15,23,42,0.98)',
-                  border: '1px solid rgba(148,163,184,0.4)',
-                  borderRadius: 10,
-                  padding: '8px 10px',
+                  backgroundColor: '#18181b',
+                  borderColor: '#27272a',
+                  borderRadius: '8px',
+                  color: '#e4e4e7',
                 }}
-                labelStyle={{ color: 'rgba(226,232,240,0.9)', fontSize: 12 }}
-                formatter={(value: number) => [
-                  `$${(value as number).toFixed(4)}`,
-                  'HBAR Price',
-                ]}
+                itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                formatter={(value: number) => [`$${value.toFixed(4)}`, 'HBAR']}
+                labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
               />
+
               <Area
                 type="monotone"
                 dataKey="price"
-                stroke="#22c55e"
-                strokeWidth={2}
-                fill="url(#hbarGradient)"
-                dot={false}
-                activeDot={{ r: 4 }}
+                stroke={isPositive ? '#10b981' : '#ef4444'}
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorPrice)"
+                isAnimationActive={false}
               />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        )}
       </div>
-    </motion.section>
+    </div>
   );
 }
 
