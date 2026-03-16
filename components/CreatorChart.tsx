@@ -165,65 +165,57 @@ export default function CreatorChart(_props: CreatorChartProps) {
         </div>
       </div>
       <div className="p-4 sm:p-6">
-        {loading && chartData.length === 0 ? (
-          <div className="flex w-full h-[260px] items-center justify-center">
-            <p className="font-heading text-sm text-neutral-500 tracking-tight animate-pulse">
-              Syncing with Mainnet…
-            </p>
-          </div>
-        ) : (
-          <div className="w-full h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="hbarGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(148,163,184,0.25)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
-                  axisLine={{ stroke: 'rgba(55,65,81,0.8)' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `$${v.toFixed(3)}`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(15,23,42,0.98)',
-                    border: '1px solid rgba(148,163,184,0.4)',
-                    borderRadius: 10,
-                    padding: '8px 10px',
-                  }}
-                  labelStyle={{ color: 'rgba(226,232,240,0.9)', fontSize: 12 }}
-                  formatter={(value: number) => [
-                    `$${(value as number).toFixed(4)}`,
-                    'HBAR Price',
-                  ]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="price"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  fill="url(#hbarGradient)"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <div className="w-full h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="hbarGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(148,163,184,0.25)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(55,65,81,0.8)' }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: 'rgba(148,163,184,0.9)', fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `$${v.toFixed(3)}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(15,23,42,0.98)',
+                  border: '1px solid rgba(148,163,184,0.4)',
+                  borderRadius: 10,
+                  padding: '8px 10px',
+                }}
+                labelStyle={{ color: 'rgba(226,232,240,0.9)', fontSize: 12 }}
+                formatter={(value: number) => [
+                  `$${(value as number).toFixed(4)}`,
+                  'HBAR Price',
+                ]}
+              />
+              <Area
+                type="monotone"
+                dataKey="price"
+                stroke="#22c55e"
+                strokeWidth={2}
+                fill="url(#hbarGradient)"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </motion.section>
   );
