@@ -12,12 +12,27 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 
+export interface ChartPoint {
+  name?: string;
+  date?: string;
+  value?: number;
+  revenue?: number;
+  views?: number;
+  [key: string]: any;
+}
+
 interface HbarPoint {
   date: string;
   price: number;
 }
 
-export default function CreatorChart() {
+interface CreatorChartProps {
+  points?: ChartPoint[];
+  loading?: boolean;
+  onRefresh?: () => void;
+}
+
+export default function CreatorChart(_props: CreatorChartProps) {
   const [hbarData, setHbarData] = useState<HbarPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
