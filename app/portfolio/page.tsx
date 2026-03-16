@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/Button';
@@ -416,13 +417,25 @@ export default function PortfolioPage() {
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto space-y-6">
         {!address ? (
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-6 text-center">
-            <p className="font-heading text-neutral-400 tracking-tight">Connect your wallet to view your portfolio.</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-6 text-center"
+          >
+            <p className="font-heading text-neutral-400 tracking-tight">
+              Connect your wallet to view your portfolio.
+            </p>
+          </motion.div>
         ) : (
           <>
             {/* Total balance + Add funds card (reference layout) */}
-            <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:bg-neutral-900/80"
+            >
               <div className="px-4 sm:px-6 py-5 flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-tight">
@@ -440,7 +453,7 @@ export default function PortfolioPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddFunds(true)}
-                  className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 transition-colors shadow-[0_0_20px_rgba(220,38,38,0.25)]"
+                  className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02] shadow-[0_0_20px_rgba(220,38,38,0.25)]"
                 >
                   Add funds
                 </button>
@@ -489,7 +502,7 @@ export default function PortfolioPage() {
                   {TOKENS.map((token) => (
                     <div
                       key={token.symbol}
-                      className="flex items-center justify-between py-2 border-b border-neutral-800/60 last:border-0"
+                      className="flex items-center justify-between py-2 border-b border-neutral-800/60 last:border-0 transition-all duration-200 hover:bg-neutral-900 hover:scale-[1.01] rounded-lg"
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-lg bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 relative">
@@ -523,10 +536,15 @@ export default function PortfolioPage() {
                   ))}
                 </div>
               )}
-            </section>
+            </motion.section>
 
             {/* Send tokens */}
-            <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:bg-neutral-900/80"
+            >
               <div className="border-b border-neutral-800 px-4 sm:px-6 py-3">
                 <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
                   Send tokens
@@ -592,15 +610,20 @@ export default function PortfolioPage() {
                     // TODO: wire to actual send transaction
                     setSendError('Send is not yet connected to the network. Coming soon.');
                   }}
-                  className="w-full rounded-lg bg-red-600 hover:bg-red-500 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                  className="w-full rounded-lg bg-red-600 hover:bg-red-500 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:opacity-50"
                 >
                   Send
                 </button>
               </div>
-            </section>
+            </motion.section>
 
             {/* Claim yield (funder pull) */}
-            <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:bg-neutral-900/80"
+            >
               <div className="border-b border-neutral-800 px-4 sm:px-6 py-3">
                 <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
                   Claim yield
@@ -619,7 +642,7 @@ export default function PortfolioPage() {
                       return (
                         <div
                           key={card.creatorAddress}
-                          className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-950/80 p-4 shadow-[0_0_20px_rgba(0,0,0,0.35)]"
+                          className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-950/80 p-4 shadow-[0_0_20px_rgba(0,0,0,0.35)] transition-all duration-200 hover:scale-[1.02] hover:bg-neutral-900"
                         >
                           <div className="mb-3">
                             <p className="font-heading text-sm font-semibold text-white tracking-tight truncate">
@@ -734,7 +757,10 @@ export default function PortfolioPage() {
                       </tr>
                     ) : (
                       transactions.map((tx) => (
-                        <tr key={tx.id} className="border-b border-neutral-800/80 last:border-0">
+                        <tr
+                          key={tx.id}
+                          className="border-b border-neutral-800/80 last:border-0 transition-all duration-200 hover:bg-neutral-900 hover:scale-[1.01]"
+                        >
                           <td className="px-4 sm:px-6 py-3 font-mono text-neutral-300">{tx.hash}</td>
                           <td className="px-4 sm:px-6 py-3 font-heading text-white">{tx.amount}</td>
                           <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType}</td>
@@ -745,7 +771,7 @@ export default function PortfolioPage() {
                   </tbody>
                 </table>
               </div>
-            </section>
+            </motion.section>
           </>
         )}
       </div>
