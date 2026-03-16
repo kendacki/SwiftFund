@@ -247,9 +247,9 @@ export default function CreatorEarningsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={chartData || []} margin={{ top: 8, left: 0, right: 10, bottom: 0 }}>
                         <defs>
-                          <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#A78BFA" stopOpacity={0.35} />
-                            <stop offset="100%" stopColor="#A78BFA" stopOpacity={0.02} />
+                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid stroke="#222" strokeDasharray="3 6" vertical={false} />
@@ -305,9 +305,9 @@ export default function CreatorEarningsPage() {
                           yAxisId="left"
                           type="monotone"
                           dataKey="revenue"
-                          stroke="#A78BFA"
+                          stroke="#10b981"
                           strokeWidth={2}
-                          fill="url(#revGradient)"
+                          fill="url(#colorRevenue)"
                           dot={false}
                           activeDot={{ r: 4 }}
                         />
