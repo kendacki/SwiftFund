@@ -162,7 +162,8 @@ export default function PortfolioPage() {
 
           const swindToken = tokens.find((t) => t.token_id === SWIND_TOKEN_ID);
           if (swindToken && typeof swindToken.balance === 'number') {
-            const swind = swindToken.balance;
+            // SWIND uses 2 decimals: raw balance 10000 => 100.00 SWIND
+            const swind = swindToken.balance / 100;
             if (!cancelled) setSwindBalance(swind);
           } else if (!cancelled) {
             setSwindBalance(0);
@@ -204,7 +205,8 @@ export default function PortfolioPage() {
             if (swindTransfer) {
               const raw = Number(swindTransfer.amount ?? 0);
               const sign = raw > 0 ? '+' : '';
-              const amt = Math.abs(raw);
+              // SWIND uses 2 decimals in Mirror Node history as well.
+              const amt = Math.abs(raw) / 100;
               tokenType = 'SWIND';
               amountLabel = `${sign}${amt.toLocaleString(undefined, {
                 maximumFractionDigits: 4,
