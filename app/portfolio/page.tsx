@@ -34,6 +34,11 @@ interface DashboardTx {
 interface FundedProject {
   creatorAddress: string;
   label: string;
+  projectName?: string;
+}
+
+interface ClaimCard extends FundedProject {
+  claimable: number;
 }
 
 function SpinnerIcon({ className }: { className?: string }) {
@@ -64,7 +69,7 @@ export default function PortfolioPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Claim yield (funder pull)
-  const [fundedProjects, setFundedProjects] = useState<FundedProject[]>([]);
+  const [claimCards, setClaimCards] = useState<ClaimCard[]>([]);
   const [claimStatus, setClaimStatus] = useState<string | null>(null);
   const [claimingCreator, setClaimingCreator] = useState<string | null>(null);
   const [claimCreatorInput, setClaimCreatorInput] = useState('');
@@ -278,33 +283,96 @@ export default function PortfolioPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Fetch funded projects (creators the user has funded on Discover). Replace with real API when available.
+  // Fetch funded projects (creators the user has funded on Discover) and compute live claimable yield.
   useEffect(() => {
     if (!address) return;
     let cancelled = false;
-    getAccessToken()
-      .then((token) => {
-        if (cancelled) return null;
+
+    const loadClaimCards = async () => {
+      try {
+        const token = await getAccessToken();
+        if (cancelled) return;
+
         const headers: HeadersInit = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
-        return fetch('/api/portfolio/funded', { headers });
-      })
-      .then((res) => {
-        if (cancelled || !res) return { projects: [] as FundedProject[] };
-        return res.json() as Promise<{ projects?: FundedProject[] }>;
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setFundedProjects(Array.isArray(data?.projects) ? data.projects : []);
-      })
-      .catch(() => !cancelled && setFundedProjects([]));
-    return () => { cancelled = true; };
-  }, [address, getAccessToken]);
+
+        const res = await fetch('/api/portfolio/funded', { headers });
+        const data = (res.ok ? await res.json() : { projects: [] }) as {
+          projects?: (FundedProject & { projectName?: string })[];
+        };
+        const projects: FundedProject[] = Array.isArray(data?.projects)
+          ? data.projects
+          : [];
+
+        if (projects.length === 0) {
+          if (!cancelled) setClaimCards([]);
+          return;
+        }
+
+        // Try to use the connected wallet provider for on-chain read calls.
+        const wallet = wallets[0];
+        if (!wallet?.getEthereumProvider) {
+          if (!cancelled) {
+            setClaimCards(
+              projects.map((p) => ({
+                ...p,
+                claimable: 0,
+              }))
+            );
+          }
+          return;
+        }
+
+        const provider = new ethers.BrowserProvider(
+          await wallet.getEthereumProvider()
+        );
+        const contract = new ethers.Contract(
+          TREASURY_EVM_ADDRESS,
+          SWIFT_FUND_TREASURY_ABI,
+          provider
+        );
+
+        const cards: ClaimCard[] = [];
+        for (const project of projects) {
+          let claimable = 0;
+          try {
+            const raw: bigint = await contract.claimableByCreatorByFunder(
+              project.creatorAddress,
+              address
+            );
+            // claimable is denominated in HBAR with 18 decimals (parseEther on write).
+            const asHbar = parseFloat(ethers.formatEther(raw));
+            claimable = Number.isFinite(asHbar) ? asHbar : 0;
+          } catch {
+            claimable = 0;
+          }
+          cards.push({
+            ...project,
+            claimable,
+          });
+        }
+
+        if (!cancelled) setClaimCards(cards);
+      } catch {
+        if (!cancelled) setClaimCards([]);
+      }
+    };
+
+    loadClaimCards();
+    return () => {
+      cancelled = true;
+    };
+  }, [address, getAccessToken, wallets]);
 
   const handleClaimYield = async (creatorAddress: string) => {
     const wallet = wallets[0];
     if (!wallet?.getEthereumProvider) {
       setClaimStatus('Wallet not ready. Please connect your wallet and try again.');
+      return;
+    }
+    const card = claimCards.find((c) => c.creatorAddress === creatorAddress);
+    if (!card || card.claimable <= 0) {
+      setClaimStatus('No yield available to claim for this project.');
       return;
     }
     setClaimingCreator(creatorAddress);
@@ -316,6 +384,12 @@ export default function PortfolioPage() {
       const { hash } = await claimYield(signer, creatorAddress);
       setClaimStatus(`Yield claimed successfully! Tx: ${hash.slice(0, 10)}…${hash.slice(-8)}`);
       setTimeout(() => setClaimStatus(null), 5000);
+      // Optimistically zero out claimable yield for this card.
+      setClaimCards((prev) =>
+        prev.map((c) =>
+          c.creatorAddress === creatorAddress ? { ...c, claimable: 0 } : c
+        )
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Claim failed.';
       const friendly =
@@ -532,82 +606,76 @@ export default function PortfolioPage() {
                 </p>
               </div>
               <div className="p-4 sm:p-6 space-y-4">
-                {fundedProjects.length > 0 ? (
-                  <ul className="space-y-3">
-                    {fundedProjects.map((project) => (
-                      <li
-                        key={project.creatorAddress}
-                        className="flex flex-wrap items-center justify-between gap-3 py-3 border-b border-neutral-800/80 last:border-0"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-heading text-sm font-medium text-white tracking-tight truncate">
-                            {project.label}
-                          </p>
-                          <p className="font-mono text-xs text-neutral-500 truncate mt-0.5">
-                            {project.creatorAddress.slice(0, 10)}…{project.creatorAddress.slice(-8)}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={() => handleClaimYield(project.creatorAddress)}
-                          disabled={claimingCreator !== null}
-                          className="disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                {claimCards.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {claimCards.map((card) => {
+                      const hasYield = card.claimable > 0;
+                      const isCardClaiming =
+                        claimingCreator === card.creatorAddress;
+                      return (
+                        <div
+                          key={card.creatorAddress}
+                          className="flex flex-col rounded-2xl border border-neutral-800 bg-neutral-950/80 p-4 shadow-[0_0_20px_rgba(0,0,0,0.35)]"
                         >
-                          {claimingCreator === project.creatorAddress ? (
-                            <>
-                              <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 mr-2" />
-                              Claiming…
-                            </>
-                          ) : (
-                            'Claim Yield'
-                          )}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+                          <div className="mb-3">
+                            <p className="font-heading text-sm font-semibold text-white tracking-tight truncate">
+                              {card.projectName || card.label}
+                            </p>
+                            <p className="font-mono text-[11px] text-neutral-500 mt-1 break-all">
+                              {card.creatorAddress.slice(0, 10)}…
+                              {card.creatorAddress.slice(-8)}
+                            </p>
+                          </div>
+                          <div className="mb-3">
+                            <p className="font-heading text-xs text-neutral-500 tracking-tight">
+                              Available yield
+                            </p>
+                            <p className="font-heading text-sm font-semibold text-emerald-300 tracking-tight mt-0.5">
+                              {hasYield
+                                ? `${card.claimable.toLocaleString(undefined, {
+                                    maximumFractionDigits: 6,
+                                  })} HBAR`
+                                : '0 HBAR'}
+                            </p>
+                          </div>
+                          <div className="mt-auto">
+                            <Button
+                              type="button"
+                              onClick={() =>
+                                hasYield && handleClaimYield(card.creatorAddress)
+                              }
+                              disabled={!hasYield || isCardClaiming}
+                              className="w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {isCardClaiming ? (
+                                <>
+                                  <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 mr-2" />
+                                  Claiming…
+                                </>
+                              ) : hasYield ? (
+                                'Claim Yield'
+                              ) : (
+                                'No Yield Available'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <p className="font-heading text-sm text-neutral-500 tracking-tight">
-                      No funded projects yet. Fund projects on Discover to see them here, or enter a creator address below to claim.
+                      You do not have any funded projects with claimable yield
+                      yet. Visit Discover to back a creator and start earning.
                     </p>
-                    <div className="flex flex-wrap items-end gap-3">
-                      <div className="flex-1 min-w-[200px]">
-                        <label htmlFor="claim-creator-address" className="block text-xs text-neutral-500 mb-1">
-                          Creator address
-                        </label>
-                        <input
-                          id="claim-creator-address"
-                          type="text"
-                          value={claimCreatorInput}
-                          onChange={(e) => setClaimCreatorInput(e.target.value)}
-                          placeholder="0x..."
-                          disabled={claimingCreator !== null}
-                          className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono disabled:opacity-60"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          const addr = claimCreatorInput.trim();
-                          if (addr.length < 10) {
-                            setClaimStatus('Enter a valid creator address (0x...).');
-                            return;
-                          }
-                          handleClaimYield(addr);
-                        }}
-                        disabled={claimingCreator !== null}
-                        className="disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {claimingCreator ? (
-                          <>
-                            <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 mr-2" />
-                            Claiming…
-                          </>
-                        ) : (
-                          'Claim Yield'
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => (window.location.href = '/discover')}
+                      className="text-sm"
+                    >
+                      Go to Discover
+                    </Button>
                   </div>
                 )}
                 {claimStatus && (
