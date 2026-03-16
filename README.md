@@ -111,6 +111,13 @@ APPROVER_SECRET=
 ## V2 Roadmap & Monetization (Post-Hackathon)
 
 - **Automated Protocol Fees:** Implement a 5% smart contract fee on successful raises (Success Fee) and a 5% fee on all yield redistributions (Performance Fee), with both routed to the SwiftFund DAO Treasury.
-- **Mainnet Deployment:** We will be moving the infastrcuture to mainnet to support real tokens with actual USD value which are totally tradable and all test envirnoments are upgraded to serve a larger user base. 
 - **Basis Point (BPS) Architecture:** Upgrade the treasury contract to support dynamic fee adjustments (in basis points) controlled by decentralized governance, enabling fine-grained tuning of protocol economics over time.
 - **SaucerSwap Liquidity:** Seed a liquidity pool on SaucerSwap to allow funders to trade their SWIND yield-bearing tokens on the open market, improving exit options and secondary liquidity for backers.
+
+## Enterprise Scalability Architecture
+
+To handle massive concurrent funding events (the "Kickstarter Hug of Death"), V2 will implement the following infrastructure:
+
+- **Background Queues (Redis/BullMQ):** Offload heavy blockchain writes and smart contract interactions to background worker queues, ensuring the Next.js API layer remains instantly responsive even during large funding spikes.
+- **Read Replicas & Edge Caching:** Use Redis as a read-optimized cache for hot project statistics and Vercel Edge Functions to serve static Creator Pages globally without repeatedly hitting the primary database.
+- **Asynchronous Webhooks:** Replace blocking, synchronous UI loading states with asynchronous webhooks that notify funders as soon as their Hedera transactions are finalized, improving UX while keeping the protocol resilient under load.
