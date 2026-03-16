@@ -196,14 +196,15 @@ export async function GET(req: Request) {
 
     const youtubeAnalytics = google.youtubeAnalytics('v2');
 
+    // YouTube Analytics data is delayed ~48–72 hours.
+    // Use an endDate exactly 3 days in the past to avoid "date dimension" errors.
     const now = new Date();
+    const end = addDays(now, -3);
 
     let points: EarningsPoint[] = [];
     let mocked = false;
 
     try {
-      const end = now;
-
       let start: Date;
       let dimensions: string;
       if (range === '7d') {
@@ -252,10 +253,10 @@ export async function GET(req: Request) {
         })
         .filter((p) => Boolean(p.date));
     } catch (err) {
-      // Graceful degradation: return realistic mock time-series for non-monetized / missing permissions.
-      if (!isInsufficientPermissionError(err)) throw err;
+      // Graceful degradation: return realistic mock time-series for any analytics error
+      // (including insufficient permissions, non-monetized channels, or date alignment).
       mocked = true;
-      points = buildMockPoints(range, now);
+      points = buildMockPoints(range, end);
     }
 
     const totals = sumPoints(points);

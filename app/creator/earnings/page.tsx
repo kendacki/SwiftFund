@@ -118,6 +118,11 @@ export default function CreatorEarningsPage() {
     return [...points].sort((a, b) => a.date.localeCompare(b.date));
   }, [points]);
 
+  const validData = useMemo(
+    () => (Array.isArray(chartData) ? chartData : []),
+    [chartData]
+  );
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-5xl mx-auto space-y-8">
@@ -243,9 +248,19 @@ export default function CreatorEarningsPage() {
                       Hover for exact values
                     </p>
                   </div>
-                  <div className="w-full h-[350px] min-h-[300px] mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData || []} margin={{ top: 8, left: 0, right: 10, bottom: 0 }}>
+                  {validData.length === 0 ? (
+                    <div className="flex w-full h-[350px] min-h-[300px] items-center justify-center">
+                      <p className="font-heading text-sm text-neutral-500 tracking-tight">
+                        Awaiting Analytics Sync…
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="w-full h-[350px] min-h-[300px] mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={validData}
+                          margin={{ top: 8, left: 0, right: 10, bottom: 0 }}
+                        >
                         <defs>
                           <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -301,7 +316,7 @@ export default function CreatorEarningsPage() {
                             );
                           }}
                         />
-                        <Area
+                          <Area
                           yAxisId="left"
                           type="monotone"
                           dataKey="revenue"
@@ -311,7 +326,7 @@ export default function CreatorEarningsPage() {
                           dot={false}
                           activeDot={{ r: 4 }}
                         />
-                        <Area
+                          <Area
                           yAxisId="right"
                           type="monotone"
                           dataKey="views"
@@ -320,10 +335,11 @@ export default function CreatorEarningsPage() {
                           fillOpacity={0}
                           dot={false}
                           activeDot={{ r: 3 }}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 overflow-hidden">
