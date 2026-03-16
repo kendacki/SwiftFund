@@ -63,6 +63,7 @@ export default function CreatorChart(_props: CreatorChartProps) {
     let intervalId: NodeJS.Timeout | undefined;
 
     const fetchData = async () => {
+      setLoading(true);
       try {
         const intervalParam =
           timeframe === '1H'
@@ -78,10 +79,17 @@ export default function CreatorChart(_props: CreatorChartProps) {
         );
         const json = await res.json();
         const raw = Array.isArray(json?.data) ? json.data : [];
-        const formatted: HbarPoint[] = raw.map((item: any) => ({
-          date: new Date(item.time).toLocaleDateString(),
-          price: Number.parseFloat(item.priceUsd ?? '0') || 0,
-        }));
+        const formatted: HbarPoint[] = raw.map((item: any) => {
+          const d = new Date(item.time);
+          const label =
+            timeframe === '1H' || timeframe === '1D'
+              ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : d.toLocaleDateString();
+          return {
+            date: label,
+            price: Number.parseFloat(item.priceUsd ?? '0') || 0,
+          };
+        });
         if (formatted.length > 0) {
           let sliced: HbarPoint[] = formatted;
           if (timeframe === '1H') {
