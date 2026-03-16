@@ -650,10 +650,15 @@ export default function PortfolioPage() {
                   </p>
                 )}
               </div>
-            </section>
+            </motion.section>
 
             {/* Recent transactions */}
-            <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden"
+            >
               <div className="border-b border-neutral-800 px-4 sm:px-6 py-3">
                 <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
                   Recent transactions
