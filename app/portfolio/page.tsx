@@ -59,6 +59,7 @@ export default function PortfolioPage() {
   const { wallets } = useWallets();
   const [address, setAddress] = useState<string | null>(null);
   const [showAddFunds, setShowAddFunds] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [sendToken, setSendToken] = useState<'HBAR' | 'SWIND'>('SWIND');
@@ -450,13 +451,22 @@ export default function PortfolioPage() {
                     Total balance
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddFunds(true)}
-                  className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02] shadow-[0_0_20px_rgba(220,38,38,0.25)]"
-                >
-                  Add funds
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddFunds(true)}
+                    className="rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02] shadow-[0_0_20px_rgba(220,38,38,0.25)]"
+                  >
+                    Add funds
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSendModalOpen(true)}
+                    className="rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
 
               <div className="border-t border-neutral-800" />
@@ -538,84 +548,7 @@ export default function PortfolioPage() {
               )}
             </motion.section>
 
-            {/* Send tokens */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:bg-neutral-900/80"
-            >
-              <div className="border-b border-neutral-800 px-4 sm:px-6 py-3">
-                <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
-                  Send tokens
-                </h2>
-              </div>
-              <div className="p-4 sm:p-6 space-y-4">
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1">Token</label>
-                  <select
-                    value={sendToken}
-                    onChange={(e) => setSendToken(e.target.value as 'HBAR' | 'SWIND')}
-                    className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
-                  >
-                    <option value="HBAR">HBAR</option>
-                    <option value="SWIND">SWIND</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1">Amount</label>
-                  <input
-                    type="text"
-                    placeholder="0.00"
-                    value={sendAmount}
-                    onChange={(e) => {
-                      setSendAmount(e.target.value);
-                      setSendError(null);
-                    }}
-                    className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1">Recipient address</label>
-                  <input
-                    type="text"
-                    placeholder="0x... or 0.0.x"
-                    value={sendTo}
-                    onChange={(e) => {
-                      setSendTo(e.target.value);
-                      setSendError(null);
-                    }}
-                    className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono"
-                  />
-                </div>
-                {sendError && (
-                  <p className="text-sm text-red-400 bg-red-500/10 rounded-lg p-2 border border-red-500/20">
-                    {sendError}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSendError(null);
-                    const amt = sendAmount.trim();
-                    const to = sendTo.trim();
-                    if (!amt || !to) {
-                      setSendError('Please enter a valid amount and recipient address.');
-                      return;
-                    }
-                    if (Number.isNaN(Number(amt)) || Number(amt) <= 0) {
-                      setSendError('Please enter a positive amount.');
-                      return;
-                    }
-                    // TODO: wire to actual send transaction
-                    setSendError('Send is not yet connected to the network. Coming soon.');
-                  }}
-                  className="w-full rounded-lg bg-red-600 hover:bg-red-500 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] disabled:opacity-50"
-                >
-                  Send
-                </button>
-              </div>
-            </motion.section>
+            {/* Send tokens moved into modal; inline card removed */}
 
             {/* Claim yield (funder pull) */}
             <motion.section
@@ -775,6 +708,114 @@ export default function PortfolioPage() {
           </>
         )}
       </div>
+
+      {/* Send funds modal */}
+      {isSendModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111] border border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
+                Send Funds
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSendModalOpen(false);
+                  setSendError(null);
+                }}
+                className="text-neutral-500 hover:text-white transition-colors p-1"
+                aria-label="Close send modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Token</label>
+                <select
+                  value={sendToken}
+                  onChange={(e) => setSendToken(e.target.value as 'HBAR' | 'SWIND')}
+                  className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
+                >
+                  <option value="HBAR">HBAR</option>
+                  <option value="SWIND">SWIND</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Amount (USD)</label>
+                <input
+                  type="text"
+                  placeholder="0.00"
+                  value={sendAmount}
+                  onChange={(e) => {
+                    setSendAmount(e.target.value);
+                    setSendError(null);
+                  }}
+                  className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Recipient address</label>
+                <input
+                  type="text"
+                  placeholder="Enter wallet address (0x... or 0.0...)"
+                  value={sendTo}
+                  onChange={(e) => {
+                    setSendTo(e.target.value);
+                    setSendError(null);
+                  }}
+                  className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono"
+                />
+              </div>
+
+              {sendError && (
+                <p className="text-sm text-red-400 bg-red-500/10 rounded-lg p-2 border border-red-500/20">
+                  {sendError}
+                </p>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSendModalOpen(false);
+                    setSendError(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-neutral-700 text-sm text-neutral-300 hover:bg-neutral-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSendError(null);
+                    const amt = sendAmount.trim();
+                    const to = sendTo.trim();
+                    if (!amt || !to) {
+                      setSendError('Please enter a valid amount and recipient address.');
+                      return;
+                    }
+                    if (Number.isNaN(Number(amt)) || Number(amt) <= 0) {
+                      setSendError('Please enter a positive amount.');
+                      return;
+                    }
+                    // TODO: wire to actual send transaction
+                    setSendError('Send is not yet connected to the network. Coming soon.');
+                  }}
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold text-white transition-colors"
+                >
+                  Review Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add funds modal: QR + address */}
       {showAddFunds && address && (
