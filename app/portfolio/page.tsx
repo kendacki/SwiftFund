@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/Button';
 import { claimYield } from '@/lib/fundCreator';
@@ -80,6 +81,10 @@ export default function PortfolioPage() {
   const [claimingCreator, setClaimingCreator] = useState<string | null>(null);
   const [claimCreatorInput, setClaimCreatorInput] = useState('');
   const [txFilter, setTxFilter] = useState<'recent' | 'day' | 'month' | 'all'>('recent');
+
+  // Live token prices for allocation donut (HBAR from CoinCap, SWIND fixed demo)
+  const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
+  const [swindPrice] = useState<number>(0.05);
 
   const totalUsdBalance =
     hbarBalance * hbarUsdPrice + swindBalance * SWIND_MOCK_PRICE;
@@ -282,6 +287,30 @@ export default function PortfolioPage() {
       if (intervalId) clearInterval(intervalId);
     };
   }, [address]);
+
+  // Fetch live HBAR price from CoinCap for allocation donut
+  useEffect(() => {
+    let isMounted = true;
+    const fetchHbarPrice = async () => {
+      try {
+        const res = await fetch('https://api.coincap.io/v2/assets/hedera-hashgraph', {
+          cache: 'no-store',
+        });
+        if (!res.ok) throw new Error('Rate limited');
+        const json = await res.json();
+        if (json?.data?.priceUsd && isMounted) {
+          setHbarPrice(parseFloat(json.data.priceUsd));
+        }
+      } catch {
+        console.warn('CoinCap API fallback triggered. Using default HBAR price.');
+        // Silently rely on default 0.1142 state
+      }
+    };
+    fetchHbarPrice();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const copyAddress = () => {
     if (!address) return;
@@ -547,6 +576,137 @@ export default function PortfolioPage() {
                   ))}
                 </div>
               )}
+            </motion.section>
+
+            {/* Portfolio allocation donut chart */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden"
+            >
+              <div className="border-b border-neutral-800 px-4 sm:px-6 py-3 flex items-center justify-between">
+                <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
+                  Portfolio allocation
+                </h2>
+                <p className="text-[11px] text-neutral-500">
+                  Live HBAR price via CoinCap
+                </p>
+              </div>
+              <div className="px-4 sm:px-6 py-4 grid grid-cols-1 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-4 items-center">
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: 'Hedera (HBAR)',
+                            value: hbarBalance * hbarPrice,
+                            raw: `${hbarBalance.toLocaleString()} HBAR`,
+                            color: '#8b5cf6',
+                          },
+                          {
+                            name: 'SwiftFund (SWIND)',
+                            value: swindBalance * swindPrice,
+                            raw: `${swindBalance.toLocaleString()} SWIND`,
+                            color: '#10b981',
+                          },
+                        ]}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius="60%"
+                        outerRadius="90%"
+                        stroke="none"
+                      >
+                        {[
+                          {
+                            name: 'Hedera (HBAR)',
+                            value: hbarBalance * hbarPrice,
+                            raw: `${hbarBalance.toLocaleString()} HBAR`,
+                            color: '#8b5cf6',
+                          },
+                          {
+                            name: 'SwiftFund (SWIND)',
+                            value: swindBalance * swindPrice,
+                            raw: `${swindBalance.toLocaleString()} SWIND`,
+                            color: '#10b981',
+                          },
+                        ].map((entry, index) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#020617',
+                          border: '1px solid #1f2937',
+                          borderRadius: 8,
+                          padding: '8px 10px',
+                        }}
+                        formatter={(value: number, name, props: any) => {
+                          const usd = value || 0;
+                          const label =
+                            props && props.payload && props.payload.raw
+                              ? props.payload.raw
+                              : name;
+                          return [
+                            usd.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }),
+                            label,
+                          ];
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    {
+                      name: 'Hedera (HBAR)',
+                      value: hbarBalance * hbarPrice,
+                      raw: `${hbarBalance.toLocaleString()} HBAR`,
+                      color: '#8b5cf6',
+                    },
+                    {
+                      name: 'SwiftFund (SWIND)',
+                      value: swindBalance * swindPrice,
+                      raw: `${swindBalance.toLocaleString()} SWIND`,
+                      color: '#10b981',
+                    },
+                  ].map((entry) => (
+                    <div
+                      key={entry.name}
+                      className="flex items-center justify-between rounded-lg bg-neutral-900/80 border border-neutral-800 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <div>
+                          <p className="font-heading text-xs font-semibold text-white tracking-tight">
+                            {entry.name}
+                          </p>
+                          <p className="text-[11px] text-neutral-500">
+                            {entry.raw}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="font-heading text-xs text-neutral-300">
+                        {entry.value.toLocaleString('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </motion.section>
 
             {/* Send tokens moved into modal; inline card removed */}
