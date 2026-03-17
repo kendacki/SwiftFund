@@ -174,10 +174,10 @@ export default function LandingPage() {
               className="text-center flex-1 min-w-[5rem] sm:min-w-[6rem] px-5 sm:px-6 py-2"
             >
               <p className="font-heading text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                ERC-20
+                Hedera
               </p>
               <p className="font-heading text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mt-1">
-                EVM Compatible
+                Hedera Token Service
               </p>
             </motion.div>
             <motion.div
