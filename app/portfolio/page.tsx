@@ -79,6 +79,7 @@ export default function PortfolioPage() {
   const [claimStatus, setClaimStatus] = useState<string | null>(null);
   const [claimingCreator, setClaimingCreator] = useState<string | null>(null);
   const [claimCreatorInput, setClaimCreatorInput] = useState('');
+  const [txFilter, setTxFilter] = useState<'recent' | 'day' | 'month' | 'all'>('recent');
 
   const totalUsdBalance =
     hbarBalance * hbarUsdPrice + swindBalance * SWIND_MOCK_PRICE;
@@ -659,10 +660,26 @@ export default function PortfolioPage() {
               transition={{ duration: 0.4, delay: 0.4 }}
               className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden"
             >
-              <div className="border-b border-neutral-800 px-4 sm:px-6 py-3">
+              <div className="border-b border-neutral-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
-                  Recent transactions
+                  Transaction history
                 </h2>
+                <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-lg p-1">
+                  {(['recent', 'day', 'month', 'all'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setTxFilter(filter)}
+                      className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${
+                        txFilter === filter
+                          ? 'bg-neutral-800 text-white shadow-sm'
+                          : 'text-neutral-500 hover:text-neutral-300'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
