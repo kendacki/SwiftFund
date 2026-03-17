@@ -81,6 +81,11 @@ export default function PortfolioPage() {
   const [claimCreatorInput, setClaimCreatorInput] = useState('');
   const [txFilter, setTxFilter] = useState<'recent' | 'day' | 'month' | 'all'>('recent');
 
+  // Pending yield (live-ticking demo)
+  const [pendingYield, setPendingYield] = useState<number>(12.458902);
+  const [isClaiming, setIsClaiming] = useState<boolean>(false);
+  const [claimSuccessMessage, setClaimSuccessMessage] = useState<string | null>(null);
+
   const totalUsdBalance =
     hbarBalance * hbarUsdPrice + swindBalance * SWIND_MOCK_PRICE;
 
@@ -371,6 +376,25 @@ export default function PortfolioPage() {
     };
   }, [address, getAccessToken, wallets]);
 
+  // Yield engine: tick pending yield up every 800ms (demo)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPendingYield((prev) => prev + Math.random() * 0.00005);
+    }, 800);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleClaimPendingYield = () => {
+    setIsClaiming(true);
+    setClaimSuccessMessage(null);
+    setTimeout(() => {
+      setClaimSuccessMessage('Successfully claimed SWIND yield!');
+      setPendingYield(0);
+      setIsClaiming(false);
+      setTimeout(() => setClaimSuccessMessage(null), 4000);
+    }, 1500);
+  };
+
   const handleClaimYield = async (creatorAddress: string) => {
     const wallet = wallets[0];
     if (!wallet?.getEthereumProvider) {
@@ -547,6 +571,43 @@ export default function PortfolioPage() {
                   ))}
                 </div>
               )}
+            </motion.section>
+
+            {/* Pending Yield & Rewards (live-ticking) */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-neutral-900/60 p-6 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
+                <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
+                  Unclaimed SWIND Yield
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 font-mono">
+                  {pendingYield.toFixed(6)}
+                </span>
+                <span className="text-xl text-neutral-400 ml-2">SWIND</span>
+              </div>
+              <p className="font-heading text-sm text-neutral-500 mt-2 tracking-tight">
+                ≈ ${(pendingYield * 0.05).toFixed(2)} USD
+              </p>
+              {claimSuccessMessage && (
+                <p className="mt-3 text-sm text-emerald-400 font-medium">
+                  {claimSuccessMessage}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleClaimPendingYield}
+                disabled={isClaiming}
+                className="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-600/80 disabled:cursor-wait text-black font-bold py-3 rounded-lg transition-all"
+              >
+                {isClaiming ? 'Claiming to Wallet...' : 'Claim Rewards'}
+              </button>
             </motion.section>
 
             {/* Send tokens moved into modal; inline card removed */}
