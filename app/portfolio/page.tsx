@@ -17,9 +17,6 @@ import {
 // Fixed SWIND token ID on Hedera testnet.
 const SWIND_TOKEN_ID = '0.0.8216024';
 
-/** Mock USD price for SWIND (testnet token; no market). */
-const SWIND_MOCK_PRICE = 0.05;
-
 // Logos in public/logos/
 const TOKENS = [
   { symbol: 'HBAR', name: 'Hedera', logo: '/logos/hedera.png' },
@@ -85,9 +82,27 @@ export default function PortfolioPage() {
   // Live token prices for allocation donut (HBAR from CoinCap, SWIND fixed demo)
   const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
   const [swindPrice] = useState<number>(0.05);
+  // Single source of truth for portfolio math
+  const hbarAmount = hbarBalance;
+  const swindAmount = swindBalance;
+  const hbarUsdValue = hbarAmount * hbarPrice;
+  const swindUsdValue = swindAmount * swindPrice;
+  const totalUsdBalance = hbarUsdValue + swindUsdValue;
 
-  const totalUsdBalance =
-    hbarBalance * hbarUsdPrice + swindBalance * SWIND_MOCK_PRICE;
+  const allocationData = [
+    {
+      name: 'Hedera (HBAR)',
+      value: hbarUsdValue,
+      raw: `${hbarAmount.toLocaleString()} HBAR`,
+      color: '#8b5cf6',
+    },
+    {
+      name: 'SwiftFund (SWIND)',
+      value: swindUsdValue,
+      raw: `${swindAmount.toLocaleString()} SWIND`,
+      color: '#10b981',
+    },
+  ];
 
   // Resolve the active wallet address from Privy.
   useEffect(() => {
@@ -470,12 +485,14 @@ export default function PortfolioPage() {
               <div className="px-4 sm:px-6 py-5 flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                    {Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(totalUsdBalance)}
+                    {totalUsdBalance > 0
+                      ? Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(totalUsdBalance)
+                      : '$0.00'}
                   </p>
                   <p className="font-heading text-sm text-neutral-500 mt-1 tracking-tight">
                     Total balance
@@ -598,40 +615,14 @@ export default function PortfolioPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={[
-                          {
-                            name: 'Hedera (HBAR)',
-                            value: hbarBalance * hbarPrice,
-                            raw: `${hbarBalance.toLocaleString()} HBAR`,
-                            color: '#8b5cf6',
-                          },
-                          {
-                            name: 'SwiftFund (SWIND)',
-                            value: swindBalance * swindPrice,
-                            raw: `${swindBalance.toLocaleString()} SWIND`,
-                            color: '#10b981',
-                          },
-                        ]}
+                        data={allocationData}
                         dataKey="value"
                         nameKey="name"
                         innerRadius="60%"
                         outerRadius="90%"
                         stroke="none"
                       >
-                        {[
-                          {
-                            name: 'Hedera (HBAR)',
-                            value: hbarBalance * hbarPrice,
-                            raw: `${hbarBalance.toLocaleString()} HBAR`,
-                            color: '#8b5cf6',
-                          },
-                          {
-                            name: 'SwiftFund (SWIND)',
-                            value: swindBalance * swindPrice,
-                            raw: `${swindBalance.toLocaleString()} SWIND`,
-                            color: '#10b981',
-                          },
-                        ].map((entry, index) => (
+                        {allocationData.map((entry) => (
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
@@ -663,20 +654,7 @@ export default function PortfolioPage() {
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-3">
-                  {[
-                    {
-                      name: 'Hedera (HBAR)',
-                      value: hbarBalance * hbarPrice,
-                      raw: `${hbarBalance.toLocaleString()} HBAR`,
-                      color: '#8b5cf6',
-                    },
-                    {
-                      name: 'SwiftFund (SWIND)',
-                      value: swindBalance * swindPrice,
-                      raw: `${swindBalance.toLocaleString()} SWIND`,
-                      color: '#10b981',
-                    },
-                  ].map((entry) => (
+                  {allocationData.map((entry) => (
                     <div
                       key={entry.name}
                       className="flex items-center justify-between rounded-lg bg-neutral-900/80 border border-neutral-800 px-3 py-2"
