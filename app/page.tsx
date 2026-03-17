@@ -123,7 +123,7 @@ export default function LandingPage() {
           }}
           className="font-heading text-sm sm:text-base md:text-lg text-neutral-400 mb-4 sm:mb-6 w-full max-w-4xl leading-relaxed tracking-tight"
         >
-          Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds—all powered by secure, transparent smart contracts.
+          Turn your views into shared value. SwiftFund connects your YouTube channel to the blockchain, automatically sharing a piece of your ad revenue with the fans who support you most with their funds, all powered by Hedera.
         </motion.p>
 
         <motion.div
