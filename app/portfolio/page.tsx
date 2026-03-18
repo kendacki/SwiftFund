@@ -181,13 +181,10 @@ export default function PortfolioPage() {
     const fetchLiveUsdc = async () => {
       try {
         const activeWallet = wallets[0];
-        if (!activeWallet) {
-          setUsdcAmount(0);
-          return;
-        }
+        if (!activeWallet) return;
 
-        const provider = await activeWallet.getEthereumProvider();
-        const ethersProvider = new ethers.BrowserProvider(provider);
+        // Use a public Sepolia RPC so it works regardless of the wallet's active network.
+        const ethersProvider = new ethers.JsonRpcProvider('https://rpc.sepolia.org');
 
         const usdcAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
@@ -198,8 +195,31 @@ export default function PortfolioPage() {
         );
 
         const balance = await usdcContract.balanceOf(activeWallet.address);
-        const formattedBalance = ethers.formatUnits(balance, 6);
-        setUsdcAmount(parseFloat(formattedBalance));
+        const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
+        setUsdcAmount(formattedBalance);
+
+        // Inject into transaction history if they have a balance (avoid duplicates).
+        if (formattedBalance > 0) {
+          setTransactions((prev) => {
+            const exists = prev.some(
+              (tx) => tx.id === 'usdc-balance' || tx.tokenType === 'USDC'
+            );
+            if (exists) return prev;
+
+            return [
+              {
+                id: 'usdc-balance',
+                hash: 'USDC balance',
+                amount: `+${formattedBalance.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })} USDC`,
+                tokenType: 'USDC',
+                time: new Date().toLocaleTimeString(),
+              },
+              ...prev,
+            ];
+          });
+        }
       } catch (error) {
         console.error('Failed to fetch live USDC balance:', error);
       }
