@@ -110,31 +110,35 @@ export default function PortfolioPage() {
   const usdcUsdValue = usdcAmount * usdcPrice;
   const totalUsdBalance = hbarUsdValue + swindUsdValue + usdcUsdValue;
 
-  const allocationData = [
+  const rawAllocationData = [
     {
       name: 'Hedera (HBAR)',
       value: hbarUsdValue,
-      raw: `${hbarAmount.toLocaleString()} HBAR`,
+      raw: `${hbarAmount} HBAR`,
       color: '#8b5cf6',
-      icon: 'ℏ',
+      icon: 'https://cryptologos.cc/logos/hedera-hbar-logo.svg?v=029',
     },
     {
       name: 'SwiftFund (SWIND)',
       value: swindUsdValue,
-      raw: `${swindAmount.toLocaleString()} SWIND`,
+      raw: `${swindAmount} SWIND`,
       color: '#10b981',
-      icon: '✦',
+      // Using a clean generic sparkle/token icon for SWIND demo
+      icon: 'https://cdn-icons-png.flaticon.com/512/3260/3260838.png',
     },
     {
       name: 'USD Coin (USDC)',
       value: usdcUsdValue,
-      raw: `${usdcAmount.toLocaleString()} USDC`,
+      raw: `${usdcAmount} USDC`,
       color: '#3b82f6',
-      icon: '💲',
+      icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=029',
     },
   ];
 
-  const filteredAllocationData = allocationData.filter((asset) => asset.value > 0);
+  // This physically removes USDC from the UI for non-admins
+  const filteredAllocationData = rawAllocationData.filter(
+    (asset) => asset.value > 0
+  );
 
   const toast = {
     success: (message: string) => {
@@ -750,37 +754,43 @@ export default function PortfolioPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-3">
-                  {filteredAllocationData.map((entry) => (
+                <div className="flex flex-col gap-4 w-full mt-6 md:mt-0">
+                  {filteredAllocationData.map((entry, index) => (
                     <div
-                      key={entry.name}
-                      className="flex items-center justify-between rounded-lg bg-neutral-900/80 border border-neutral-800 px-3 py-2"
+                      key={index}
+                      className="flex items-center justify-between w-full p-2 hover:bg-neutral-800/50 rounded-lg transition-colors"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="mr-2 flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 text-xs">
-                          {entry.icon}
-                        </span>
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <div>
-                          <p className="font-heading text-xs font-semibold text-white tracking-tight">
-                            {entry.name}
-                          </p>
-                          <p className="text-[11px] text-neutral-500">
+                      <div className="flex items-center gap-3">
+                        {/* The Physical Asset Logo */}
+                        <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center p-2 border border-neutral-700 shrink-0">
+                          <img
+                            src={entry.icon}
+                            alt={entry.name}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+
+                        {/* Asset Name, Dot, and Raw Balance */}
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: entry.color }}
+                            ></span>
+                            <span className="text-white font-bold text-sm md:text-base">
+                              {entry.name}
+                            </span>
+                          </div>
+                          <span className="text-neutral-400 text-xs md:text-sm">
                             {entry.raw}
-                          </p>
+                          </span>
                         </div>
                       </div>
-                      <p className="font-heading text-xs text-neutral-300">
-                        {entry.value.toLocaleString('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
+
+                      {/* Total USD Value */}
+                      <span className="text-white font-mono font-bold">
+                        ${entry.value.toFixed(2)}
+                      </span>
                     </div>
                   ))}
                 </div>
