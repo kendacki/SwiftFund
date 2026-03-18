@@ -587,14 +587,14 @@ export default function PortfolioPage() {
                   <button
                     type="button"
                     onClick={() => setIsSendModalOpen(true)}
-                    className="rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
+                    className="min-w-[8.5rem] inline-flex items-center justify-center rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
                   >
                     Send
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsSwapModalOpen(true)}
-                    className="rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
+                    className="min-w-[8.5rem] inline-flex items-center justify-center rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
                   >
                     <span className="inline-flex items-center gap-2">
                       <svg
