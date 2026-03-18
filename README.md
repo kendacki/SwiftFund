@@ -70,7 +70,7 @@ SwiftFund is built to be an enterprise-grade, high-throughput application levera
 
 - **The Hedera Token Service (HTS):** Unlike standard EVM chains that rely heavily on expensive ERC-20 smart contracts, SwiftFund utilizes native HTS for asset management. The $SWIND platform token is minted natively via HTS, ensuring yield distribution is executed with maximum efficiency.
 - **Smart Contract Logic (HSCS):** Our backend logic is powered by the Hedera Smart Contract Service. When a user funds a creator, the contract registers their wallet. As the creator generates external revenue, the contract mathematically distributes the equivalent yield to registered wallets. *(Note: On the current Testnet deployment, funding logic utilizes native HBAR to simulate this transaction flow).*
-- **Cross-Chain Interoperability:** To frictionlessly onboard users from the Ethereum ecosystem, SwiftFund is designed with cross-chain composability. Rather than building a centralized custom oracle, our mainnet architecture routes cross-chain EVM assets (like USDC) through audited bridges such as **Hashport** or **LayerZero** directly into Hedera HTS tokens.
+- **Cross-Chain Interoperability:** To frictionlessly onboard users from the Ethereum ecosystem, SwiftFund is designed with cross-chain composability. Rather than building a centralized custom oracle, our architecture routes cross-chain EVM assets (like USDC) through audited bridges such as **Hashport** or **LayerZero** directly into Hedera HTS tokens.
 
 ## Tech Stack
 
