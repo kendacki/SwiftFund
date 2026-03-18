@@ -436,8 +436,8 @@ export default function DiscoverPage() {
                 <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
                   Fund {selectedProject.creatorName}
                 </h2>
-                <p className="font-heading text-xs text-neutral-400 tracking-tight">
-                  Testnet Mode: Enter your funding amount in USD. The system will simulate the transaction by deducting the equivalent HBAR. Your SWIND balance remains untouched.
+                <p className="text-center text-emerald-400 font-medium mb-6">
+                  "Prove your loyalty and get rewarded."
                 </p>
               </div>
               <button
@@ -463,9 +463,6 @@ export default function DiscoverPage() {
               />
               <p className="text-sm text-neutral-400 mt-2">
                 Equivalent: {hbarRequired.toFixed(2)} HBAR
-              </p>
-              <p className="text-xs text-neutral-500">
-                Step 1: Enter your desired funding amount in USD. Step 2: Confirm the transaction. The system will automatically convert and deduct the equivalent testnet HBAR.
               </p>
             </div>
 
