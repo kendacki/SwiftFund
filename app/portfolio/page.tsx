@@ -22,6 +22,7 @@ const SWIND_TOKEN_ID = '0.0.8216024';
 const TOKENS = [
   { symbol: 'HBAR', name: 'Hedera', logo: '/logos/hedera.png' },
   { symbol: 'SWIND', name: 'SwiftFund', logo: '/logos/swiftfund-logo.png' },
+  { symbol: 'USDC', name: 'USD', logo: '/usdc.png' },
 ] as const;
 
 type TokenSymbol = (typeof TOKENS)[number]['symbol'];
@@ -116,22 +117,21 @@ export default function PortfolioPage() {
       value: hbarUsdValue,
       raw: `${hbarAmount} HBAR`,
       color: '#8b5cf6',
-      icon: 'https://cryptologos.cc/logos/hedera-hbar-logo.svg?v=029',
+      icon: '/logos/hedera.png',
     },
     {
       name: 'SwiftFund (SWIND)',
       value: swindUsdValue,
       raw: `${swindAmount} SWIND`,
       color: '#10b981',
-      // Using a clean generic sparkle/token icon for SWIND demo
-      icon: 'https://cdn-icons-png.flaticon.com/512/3260/3260838.png',
+      icon: '/logos/swiftfund-logo.png',
     },
     {
       name: 'USD Coin (USDC)',
       value: usdcUsdValue,
       raw: `${usdcAmount} USDC`,
       color: '#3b82f6',
-      icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=029',
+      icon: '/usdc.png',
     },
   ];
 
@@ -682,9 +682,11 @@ export default function PortfolioPage() {
                             ? `${hbarBalance.toLocaleString(undefined, {
                                 maximumFractionDigits: 4,
                               })} HBAR`
-                            : `${swindBalance.toLocaleString(undefined, {
+                            : token.symbol === 'SWIND'
+                            ? `${swindBalance.toLocaleString(undefined, {
                                 maximumFractionDigits: 4,
-                              })} SWIND`}
+                              })} SWIND`
+                            : `${usdcAmount.toLocaleString()} USDC`}
                         </p>
                         <p className="font-heading text-xs text-neutral-500 tracking-tight">
                           {token.name}
@@ -788,9 +790,9 @@ export default function PortfolioPage() {
                       </div>
 
                       {/* Total USD Value */}
-                      <span className="text-white font-mono font-bold">
-                        ${entry.value.toFixed(2)}
-                      </span>
+      <span className="text-white font-mono font-bold">
+        ${entry.value.toFixed(2)}
+      </span>
                     </div>
                   ))}
                 </div>
@@ -1157,7 +1159,7 @@ export default function PortfolioPage() {
                 type="button"
                 onClick={handleInitiateSwap}
                 disabled={isSwapLoading}
-                className="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/80 disabled:cursor-wait text-white font-bold py-3 rounded-lg transition-all"
+                className="w-full mt-6 bg-red-600 hover:bg-red-700 disabled:bg-red-600/80 disabled:cursor-wait text-white font-bold py-3 rounded-lg transition-all"
               >
                 {isSwapLoading ? (
                   <span className="inline-flex items-center justify-center gap-2">

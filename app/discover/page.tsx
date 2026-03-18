@@ -437,7 +437,7 @@ export default function DiscoverPage() {
                   Fund {selectedProject.creatorName}
                 </h2>
                 <p className="font-heading text-xs text-neutral-400 tracking-tight">
-                  Enter the amount you want to contribute to this project.
+                  Testnet Mode: Enter your funding amount in USD. The system will simulate the transaction by deducting the equivalent HBAR. Your SWIND balance remains untouched.
                 </p>
               </div>
               <button
