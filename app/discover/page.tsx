@@ -436,9 +436,11 @@ export default function DiscoverPage() {
                 <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
                   Fund {selectedProject.creatorName}
                 </h2>
-                <p className="text-center text-emerald-400 font-medium mb-6">
-                  "Prove your loyalty and get rewarded."
-                </p>
+                <div className="bg-white/5 border border-white/10 rounded-lg py-2 px-4 mb-6 mx-auto w-fit">
+                  <p className="text-sm text-white text-center font-medium">
+                    Prove your loyalty and get rewarded.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={closeModal}
