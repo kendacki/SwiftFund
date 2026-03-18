@@ -181,30 +181,40 @@ export default function PortfolioPage() {
     const fetchLiveUsdc = async () => {
       try {
         const activeWallet = wallets[0];
-        if (!activeWallet) return;
+        if (!activeWallet) {
+          console.log('🛑 DEBUG: No active wallet detected by Privy.');
+          return;
+        }
+
+        console.log('✅ DEBUG: Privy Wallet detected:', activeWallet.address);
+        console.log('⏳ DEBUG: Pinging Sepolia RPC for USDC balance...');
 
         // Use a public Sepolia RPC so it works regardless of the wallet's active network.
-        const ethersProvider = new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+        const provider = new ethers.JsonRpcProvider('https://rpc.sepolia.org');
 
         const usdcAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
-        const usdcContract = new ethers.Contract(
-          usdcAddress,
-          usdcAbi,
-          ethersProvider
-        );
+        const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
         const balance = await usdcContract.balanceOf(activeWallet.address);
+        console.log('🔗 DEBUG: Raw balance from chain:', balance.toString());
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
+        console.log('💰 DEBUG: Formatted Balance to inject:', formattedBalance);
         setUsdcAmount(formattedBalance);
 
         // Inject into transaction history if they have a balance (avoid duplicates).
         if (formattedBalance > 0) {
+          console.log('🔄 DEBUG: Injecting transaction into history state...');
           setTransactions((prev) => {
             const exists = prev.some(
               (tx) => tx.id === 'usdc-balance' || tx.tokenType === 'USDC'
             );
-            if (exists) return prev;
+            if (exists) {
+              console.log(
+                '⚠️ DEBUG: Transaction already exists in state, skipping.'
+              );
+              return prev;
+            }
 
             return [
               {
@@ -219,9 +229,16 @@ export default function PortfolioPage() {
               ...prev,
             ];
           });
+        } else {
+          console.log(
+            '⚠️ DEBUG: Balance is 0, skipping transaction history injection.'
+          );
         }
       } catch (error) {
-        console.error('Failed to fetch live USDC balance:', error);
+        console.error(
+          '❌ DEBUG ERROR: Failed to fetch live USDC balance:',
+          error
+        );
       }
     };
 
