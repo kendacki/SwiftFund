@@ -190,7 +190,9 @@ export default function PortfolioPage() {
         console.log('⏳ DEBUG: Pinging Sepolia RPC for USDC balance...');
 
         // Use a public Sepolia RPC so it works regardless of the wallet's active network.
-        const provider = new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+        const provider = new ethers.JsonRpcProvider(
+          'https://ethereum-sepolia-rpc.publicnode.com'
+        );
 
         const usdcAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
