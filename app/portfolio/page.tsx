@@ -58,12 +58,20 @@ export default function PortfolioPage() {
   const [address, setAddress] = useState<string | null>(null);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [sendToken, setSendToken] = useState<'HBAR' | 'SWIND'>('SWIND');
   const [sendAmount, setSendAmount] = useState('');
   const [sendTo, setSendTo] = useState('');
   const [sendError, setSendError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Swap/Bridge state (demo)
+  const [isSwapLoading, setIsSwapLoading] = useState(false);
+  const [swapFromToken, setSwapFromToken] = useState<'USDC' | 'HBAR'>('USDC');
+  const [swapToToken, setSwapToToken] = useState<'USDC' | 'HBAR'>('HBAR');
+  const [swapFromAmount, setSwapFromAmount] = useState<string>('0');
 
   // Dashboard state
   const [hbarBalance, setHbarBalance] = useState<number>(0);
@@ -82,12 +90,15 @@ export default function PortfolioPage() {
   // Live token prices for allocation donut (HBAR from CoinCap, SWIND fixed demo)
   const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
   const [swindPrice] = useState<number>(0.05);
+  const usdcAmount = 250;
+  const [usdcPrice] = useState<number>(1.0); // USDC is pegged to $1
   // Single source of truth for portfolio math
   const hbarAmount = hbarBalance;
   const swindAmount = swindBalance;
   const hbarUsdValue = hbarAmount * hbarPrice;
   const swindUsdValue = swindAmount * swindPrice;
-  const totalUsdBalance = hbarUsdValue + swindUsdValue;
+  const usdcUsdValue = usdcAmount * usdcPrice;
+  const totalUsdBalance = hbarUsdValue + swindUsdValue + usdcUsdValue;
 
   const allocationData = [
     {
@@ -102,7 +113,31 @@ export default function PortfolioPage() {
       raw: `${swindAmount.toLocaleString()} SWIND`,
       color: '#10b981',
     },
+    {
+      name: 'USD Coin (USDC)',
+      value: usdcUsdValue,
+      raw: `${usdcAmount.toLocaleString()} USDC`,
+      color: '#3b82f6',
+    },
   ];
+
+  const toast = {
+    success: (message: string) => {
+      setToastMessage(message);
+      setTimeout(() => setToastMessage(null), 3000);
+    },
+  };
+
+  const swapFromAmountNum = Number(swapFromAmount) || 0;
+  const swapToAmountNum =
+    swapFromToken === 'USDC' && swapToToken === 'HBAR'
+      ? hbarPrice > 0
+        ? swapFromAmountNum / hbarPrice
+        : 0
+      : swapFromToken === 'HBAR' && swapToToken === 'USDC'
+        ? swapFromAmountNum * hbarPrice
+        : swapFromAmountNum;
+  const swapToAmountStr = swapToAmountNum.toFixed(6);
 
   // Resolve the active wallet address from Privy.
   useEffect(() => {
@@ -455,6 +490,15 @@ export default function PortfolioPage() {
     }
   };
 
+  const handleInitiateSwap = () => {
+    setIsSwapLoading(true);
+    setTimeout(() => {
+      toast.success('Swap successful! Assets bridged to Hedera.');
+      setIsSwapModalOpen(false);
+      setIsSwapLoading(false);
+    }, 2000);
+  };
+
   const qrUrl = address
     ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`
     : '';
@@ -512,6 +556,29 @@ export default function PortfolioPage() {
                     className="rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
                   >
                     Send
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSwapModalOpen(true)}
+                    className="rounded-xl border border-neutral-700 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-100 font-semibold px-5 py-2.5 transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 text-neutral-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 7h10M7 7l3-3M7 7l3 3M17 17H7m10 0l-3 3m3-3l-3-3"
+                        />
+                      </svg>
+                      Swap
+                    </span>
                   </button>
                 </div>
               </div>
@@ -869,6 +936,12 @@ export default function PortfolioPage() {
         )}
       </div>
 
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[60] bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+          {toastMessage}
+        </div>
+      )}
+
       {/* Send funds modal */}
       {isSendModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -972,6 +1045,112 @@ export default function PortfolioPage() {
                   Review Send
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Swap modal: Cross-chain Swap/Bridge */}
+      {isSwapModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111] border border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
+                Cross-Chain Swap
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSwapModalOpen(false);
+                  setIsSwapLoading(false);
+                }}
+                className="text-neutral-500 hover:text-white transition-colors p-1"
+                aria-label="Close swap modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-500 mb-4">Powered by Hedera Hashport Oracle</p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-xs text-neutral-500">From</label>
+                <div className="flex gap-3">
+                  <select
+                    value={swapFromToken}
+                    onChange={(e) => setSwapFromToken(e.target.value as 'USDC' | 'HBAR')}
+                    className="w-32 rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
+                  >
+                    <option value="USDC">USDC - EVM</option>
+                    <option value="HBAR">HBAR - Hedera</option>
+                  </select>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={swapFromAmount}
+                    onChange={(e) => setSwapFromAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="flex-1 rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const from = swapFromToken;
+                    const to = swapToToken;
+                    setSwapFromToken(to);
+                    setSwapToToken(from);
+                  }}
+                  className="w-10 h-10 rounded-xl bg-neutral-900/60 border border-neutral-800 text-neutral-200 hover:bg-neutral-800 transition-colors flex items-center justify-center"
+                  aria-label="Flip tokens"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-4 4m4-4l4 4" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs text-neutral-500">To</label>
+                <div className="flex gap-3">
+                  <select
+                    value={swapToToken}
+                    onChange={(e) => setSwapToToken(e.target.value as 'USDC' | 'HBAR')}
+                    className="w-32 rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
+                  >
+                    <option value="HBAR">HBAR - Hedera</option>
+                    <option value="USDC">USDC - EVM</option>
+                  </select>
+                  <input
+                    type="text"
+                    readOnly
+                    value={swapToAmountStr}
+                    className="flex-1 rounded-lg bg-neutral-900/60 border border-neutral-800 px-3 py-2 text-sm text-white/90 outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleInitiateSwap}
+                disabled={isSwapLoading}
+                className="w-full mt-6 bg-red-600 hover:bg-red-500 disabled:bg-red-600/80 disabled:cursor-wait text-black font-bold py-3 rounded-lg transition-all"
+              >
+                {isSwapLoading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 text-black" />
+                    Bridging Assets...
+                  </span>
+                ) : (
+                  'Initiate Swap'
+                )}
+              </button>
             </div>
           </div>
         </div>
