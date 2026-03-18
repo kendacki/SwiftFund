@@ -879,7 +879,7 @@ export default function CreatorDashboard() {
                   </p>
                 )}
                 <p className="font-heading text-[11px] text-neutral-500 mt-1 tracking-tight">
-                  Optional PDF with account/identity info for verification. Max 5 MB.
+                  PDF account statement showing your YouTube earnings for verification. Max 5 MB.
                 </p>
               </div>
               <div>
