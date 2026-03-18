@@ -105,9 +105,60 @@ export default function DiscoverPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null
   );
-  const [amount, setAmount] = useState('');
+  const [fundAmountUsd, setFundAmountUsd] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  // Fallback demo USD->HBAR conversion; overridden by live CoinCap fetch if available.
+  const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
+  const [mockHbarBalance, setMockHbarBalance] = useState<number>(100);
+
+  const toast = {
+    success: (message: string) => {
+      setToastType('success');
+      setToastMessage(message);
+      setTimeout(() => setToastMessage(null), 3500);
+    },
+    error: (message: string) => {
+      setToastType('error');
+      setToastMessage(message);
+      setTimeout(() => setToastMessage(null), 3500);
+    },
+  };
+
+  const hbarRequired = fundAmountUsd
+    ? (() => {
+        const n = Number(fundAmountUsd);
+        if (!Number.isFinite(n) || hbarPrice <= 0) return 0;
+        return n / hbarPrice;
+      })()
+    : 0;
+
+  // Fetch live HBAR price (CoinCap). If rate-limited, we keep fallback 0.1142.
+  useEffect(() => {
+    let isMounted = true;
+    const fetchHbarPrice = async () => {
+      try {
+        const res = await fetch(
+          'https://api.coincap.io/v2/assets/hedera-hashgraph',
+          { cache: 'no-store' }
+        );
+        if (!res.ok) throw new Error('Rate limited');
+        const json = await res.json();
+        const price = json?.data?.priceUsd;
+        if (price && isMounted) setHbarPrice(parseFloat(price));
+      } catch {
+        // Silently fail and rely on default state.
+      }
+    };
+
+    fetchHbarPrice();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetch('/api/projects?discover=1')
@@ -164,13 +215,13 @@ export default function DiscoverPage() {
 
   const openModal = (projectId: string) => {
     setSelectedProjectId(projectId);
-    setAmount('');
+    setFundAmountUsd('');
     setStatus(null);
   };
 
   const closeModal = () => {
     setSelectedProjectId(null);
-    setAmount('');
+    setFundAmountUsd('');
     setIsSubmitting(false);
   };
 
@@ -181,9 +232,14 @@ export default function DiscoverPage() {
       setStatus('This project has reached the 200 funder maximum.');
       return;
     }
-    const amountTrimmed = amount.trim();
-    if (!amountTrimmed || Number(amountTrimmed) <= 0) {
-      setStatus('Enter a valid amount (HBAR) to fund.');
+    const fundAmountUsdTrimmed = fundAmountUsd.trim();
+    if (!fundAmountUsdTrimmed || Number(fundAmountUsdTrimmed) <= 0) {
+      setStatus('Enter a valid amount (USD) to fund.');
+      return;
+    }
+    const requiredHbar = hbarRequired;
+    if (requiredHbar <= 0) {
+      setStatus('Enter a valid amount (USD) to fund.');
       return;
     }
     if (!authenticated) {
@@ -198,12 +254,53 @@ export default function DiscoverPage() {
     }
 
     try {
+      // Simulate smart contract execution delay before running the on-chain steps.
       setIsSubmitting(true);
+      setStatus('Funding...');
+      await new Promise((r) => setTimeout(r, 1500));
 
       setStatus('Step 1/2: Associating SWIND token with your wallet. Approve in your wallet.');
       const provider = await wallet.getEthereumProvider();
       const ethersProvider = new ethers.BrowserProvider(provider);
       const signer = await ethersProvider.getSigner();
+
+      // Check available HBAR balance (testnet). If the lookup fails, we keep mockHbarBalance.
+      try {
+        const signerAddress = await signer.getAddress();
+        const accountRes = await fetch(
+          `https://testnet.mirrornode.hedera.com/api/v1/accounts/${signerAddress}`
+        );
+        if (accountRes.ok) {
+          const accountJson = await accountRes.json();
+          const accountId: string | undefined = accountJson?.account;
+          if (accountId) {
+            const balancesRes = await fetch(
+              `https://testnet.mirrornode.hedera.com/api/v1/balances?account.id=${accountId}`
+            );
+            if (balancesRes.ok) {
+              const balancesJson = await balancesRes.json();
+              const entry = Array.isArray(balancesJson?.balances)
+                ? balancesJson.balances[0]
+                : null;
+              const tinybar: number | undefined = entry?.balance;
+              const available = typeof tinybar === 'number' ? tinybar / 1e8 : mockHbarBalance;
+              setMockHbarBalance(available);
+              if (available > 0 && requiredHbar > available) {
+                toast.error('Insufficient HBAR balance.');
+                setIsSubmitting(false);
+                return;
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore balance fetch failures and use mockHbarBalance.
+        if (mockHbarBalance > 0 && requiredHbar > mockHbarBalance) {
+          toast.error('Insufficient HBAR balance.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       try {
         await associateToken(signer);
@@ -219,10 +316,11 @@ export default function DiscoverPage() {
 
       setStatus('Step 2/2: Confirm funding in your wallet.');
       const creatorAddress = (selectedProject as { creatorEvmAddress?: string }).creatorEvmAddress ?? CONTRACT_ADDRESS;
-      const { hash } = await fundCreator(signer, creatorAddress, amountTrimmed);
+      const { hash } = await fundCreator(signer, creatorAddress, requiredHbar.toFixed(2));
 
+      toast.success(`Successfully funded with ${requiredHbar.toFixed(2)} HBAR!`);
       setStatus(`Funding successful! Transaction: ${hash.slice(0, 10)}…${hash.slice(-8)}`);
-      setAmount('');
+      setFundAmountUsd('');
       setTimeout(() => {
         closeModal();
       }, 2500);
@@ -352,21 +450,36 @@ export default function DiscoverPage() {
 
             <div className="space-y-3 mb-4">
               <label className="block text-xs text-neutral-400">
-                Amount (HBAR)
+                Amount (USD)
               </label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                value={fundAmountUsd}
+                onChange={(e) => setFundAmountUsd(e.target.value)}
                 className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-white outline-none focus:border-red-600"
-                placeholder="e.g. 1.5"
+                placeholder="$0.00"
               />
+              <p className="text-sm text-neutral-400 mt-2">
+                Equivalent: {hbarRequired.toFixed(2)} HBAR
+              </p>
               <p className="text-xs text-neutral-500">
-                Step 1: Associate SWIND with your wallet. Step 2: Send HBAR to the creator via the treasury.
+                Step 1: Associate SWIND with your wallet. Step 2: Send the required HBAR to the creator via the treasury.
               </p>
             </div>
+
+            {toastMessage && (
+              <p
+                className={`mb-3 text-sm whitespace-pre-wrap rounded-lg p-2 ${
+                  toastType === 'success'
+                    ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20'
+                    : 'text-red-300 bg-red-500/10 border border-red-500/20'
+                }`}
+              >
+                {toastMessage}
+              </p>
+            )}
 
             {status && (
               <p
@@ -406,6 +519,9 @@ export default function DiscoverPage() {
                 {isSubmitting ? 'Funding...' : selectedProjectFunderCap ? 'Sold Out' : 'Confirm Funding'}
               </Button>
             </div>
+            <p className="text-xs text-neutral-500 text-center mt-2">
+              Testnet: Funding uses HBAR. SWIND balances remain untouched.
+            </p>
           </div>
         </div>
       )}

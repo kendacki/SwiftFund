@@ -87,6 +87,15 @@ export default function PortfolioPage() {
   const [claimCreatorInput, setClaimCreatorInput] = useState('');
   const [txFilter, setTxFilter] = useState<'recent' | 'day' | 'month' | 'all'>('recent');
 
+  // Mock "Claimable Yield" dashboard (demo)
+  const [claimableYields, setClaimableYields] = useState<
+    Array<{ id: number; creator: string; yieldAmount: number; asset: 'HBAR' | 'SWIND' }>
+  >([
+    { id: 1, creator: 'Marques Brownlee', yieldAmount: 145.5, asset: 'HBAR' },
+    { id: 2, creator: 'MrBeast', yieldAmount: 320.25, asset: 'HBAR' },
+  ]);
+  const [isClaimingYield, setIsClaimingYield] = useState<number | null>(null);
+
   // Live token prices for allocation donut (HBAR from CoinCap, SWIND fixed demo)
   const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
   const [swindPrice] = useState<number>(0.05);
@@ -490,6 +499,21 @@ export default function PortfolioPage() {
     }
   };
 
+  const handleClaimMockYield = (id: number) => {
+    const item = claimableYields.find((y) => y.id === id);
+    if (!item) return;
+    setIsClaimingYield(id);
+
+    setTimeout(() => {
+      // Optimistically remove the item so UI feels instant.
+      setClaimableYields((prev) => prev.filter((y) => y.id !== id));
+      toast.success(
+        `Successfully claimed ${item.yieldAmount.toFixed(2)} ${item.asset}!`
+      );
+      setIsClaimingYield(null);
+    }, 2000);
+  };
+
   const handleInitiateSwap = () => {
     setIsSwapLoading(true);
     setTimeout(() => {
@@ -751,6 +775,67 @@ export default function PortfolioPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </motion.section>
+
+            {/* Claimable Yield from Creators (demo) */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:bg-neutral-900/80"
+            >
+              <div className="p-4 sm:p-6">
+                <h3 className="text-lg font-bold text-white mb-4">
+                  Claimable Yield from Creators
+                </h3>
+
+                {claimableYields.length > 0 ? (
+                  <div>
+                    {claimableYields.map((creator) => (
+                      <div
+                        key={creator.id}
+                        className="bg-neutral-900/60 border border-neutral-800 rounded-lg p-4 flex justify-between items-center mb-3"
+                      >
+                        <div>
+                          <p className="font-heading text-sm font-semibold text-white tracking-tight">
+                            {creator.creator}
+                          </p>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            Ad Revenue Share
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-emerald-300 font-mono drop-shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                              {creator.yieldAmount.toFixed(2)} {creator.asset}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={isClaimingYield === creator.id}
+                            onClick={() => handleClaimMockYield(creator.id)}
+                            className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold disabled:bg-emerald-600/80 disabled:cursor-wait transition-all"
+                          >
+                            {isClaimingYield === creator.id ? (
+                              <span className="inline-flex items-center gap-2 justify-center">
+                                <SpinnerIcon className="h-4 w-4 animate-spin shrink-0" />
+                                Claiming...
+                              </span>
+                            ) : (
+                              'Claim'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    No claimable yield at the moment.
+                  </p>
+                )}
               </div>
             </motion.section>
 
