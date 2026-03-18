@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
+import Link from 'next/link';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/Button';
@@ -90,16 +91,16 @@ export default function PortfolioPage() {
   // Mock "Claimable Yield" dashboard (demo)
   const [claimableYields, setClaimableYields] = useState<
     Array<{ id: number; creator: string; yieldAmount: number; asset: 'HBAR' | 'SWIND' }>
-  >([
-    { id: 1, creator: 'Marques Brownlee', yieldAmount: 145.5, asset: 'HBAR' },
-    { id: 2, creator: 'MrBeast', yieldAmount: 320.25, asset: 'HBAR' },
-  ]);
+  >([]);
   const [isClaimingYield, setIsClaimingYield] = useState<number | null>(null);
 
   // Live token prices for allocation donut (HBAR from CoinCap, SWIND fixed demo)
   const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
   const [swindPrice] = useState<number>(0.05);
-  const usdcAmount = 250;
+
+  const adminAddress = '0x05ea4448280b9FD96785D2F036Bfc5C2ae7BF225';
+  const usdcAmount =
+    address?.toLowerCase() === adminAddress.toLowerCase() ? 250 : 0;
   const [usdcPrice] = useState<number>(1.0); // USDC is pegged to $1
   // Single source of truth for portfolio math
   const hbarAmount = hbarBalance;
@@ -115,20 +116,25 @@ export default function PortfolioPage() {
       value: hbarUsdValue,
       raw: `${hbarAmount.toLocaleString()} HBAR`,
       color: '#8b5cf6',
+      icon: 'ℏ',
     },
     {
       name: 'SwiftFund (SWIND)',
       value: swindUsdValue,
       raw: `${swindAmount.toLocaleString()} SWIND`,
       color: '#10b981',
+      icon: '✦',
     },
     {
       name: 'USD Coin (USDC)',
       value: usdcUsdValue,
       raw: `${usdcAmount.toLocaleString()} USDC`,
       color: '#3b82f6',
+      icon: '💲',
     },
   ];
+
+  const filteredAllocationData = allocationData.filter((asset) => asset.value > 0);
 
   const toast = {
     success: (message: string) => {
@@ -706,14 +712,14 @@ export default function PortfolioPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={allocationData}
+                        data={filteredAllocationData}
                         dataKey="value"
                         nameKey="name"
                         innerRadius="60%"
                         outerRadius="90%"
                         stroke="none"
                       >
-                        {allocationData.map((entry) => (
+                        {filteredAllocationData.map((entry) => (
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
@@ -745,12 +751,15 @@ export default function PortfolioPage() {
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-3">
-                  {allocationData.map((entry) => (
+                  {filteredAllocationData.map((entry) => (
                     <div
                       key={entry.name}
                       className="flex items-center justify-between rounded-lg bg-neutral-900/80 border border-neutral-800 px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
+                        <span className="mr-2 flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 text-xs">
+                          {entry.icon}
+                        </span>
                         <span
                           className="h-2.5 w-2.5 rounded-full"
                           style={{ backgroundColor: entry.color }}
@@ -790,7 +799,26 @@ export default function PortfolioPage() {
                   Claimable Yield from Creators
                 </h3>
 
-                {claimableYields.length > 0 ? (
+                {claimableYields.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 bg-neutral-900/60 border border-neutral-800 rounded-xl text-center border-dashed">
+                    <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mb-4 text-xl">
+                      🌟
+                    </div>
+                    <p className="text-neutral-300 font-medium mb-2">
+                      No Claimable Yield Yet
+                    </p>
+                    <p className="text-neutral-500 text-sm mb-6 max-w-sm">
+                      Fund creators on the platform to start earning a share
+                      of their YouTube ad revenue.
+                    </p>
+                    <Link
+                      href="/discover"
+                      className="bg-white text-black px-6 py-2.5 rounded-lg font-bold hover:bg-neutral-200 transition-all duration-200"
+                    >
+                      Discover Creators
+                    </Link>
+                  </div>
+                ) : (
                   <div>
                     {claimableYields.map((creator) => (
                       <div
@@ -831,10 +859,6 @@ export default function PortfolioPage() {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-neutral-500">
-                    No claimable yield at the moment.
-                  </p>
                 )}
               </div>
             </motion.section>
