@@ -64,6 +64,14 @@ We specifically chose to build SwiftFund on the Hedera network for four critical
 - **Native On-Chain Fiat Conversion:** We bypass centralized Web2 pricing APIs entirely. SwiftFund connects directly to the Hedera Mirror Node to fetch the official, real-time HBAR/USD exchange rate, ensuring our fiat dashboard is entirely decentralized.
 - **Seamless EVM Compatibility:** We were able to write standard Solidity smart contracts and connect them to Hedera's native Token Service (HTS) via precompiles, getting the best of both EVM developer tooling and Hedera's native speed.
 
+## Enterprise-Grade Hedera Architecture
+
+SwiftFund is built to be an enterprise-grade, high-throughput application leveraging the unique capabilities of the Hedera network. Our architecture is designed to handle micro-transactions and yield distribution with absolute finality and near-zero gas fees.
+
+- **The Hedera Token Service (HTS):** Unlike standard EVM chains that rely heavily on expensive ERC-20 smart contracts, SwiftFund utilizes native HTS for asset management. The $SWIND platform token is minted natively via HTS, ensuring yield distribution is executed with maximum efficiency.
+- **Smart Contract Logic (HSCS):** Our backend logic is powered by the Hedera Smart Contract Service. When a user funds a creator, the contract registers their wallet. As the creator generates external revenue, the contract mathematically distributes the equivalent yield to registered wallets. *(Note: On the current Testnet deployment, funding logic utilizes native HBAR to simulate this transaction flow).*
+- **Cross-Chain Interoperability:** To frictionlessly onboard users from the Ethereum ecosystem, SwiftFund is designed with cross-chain composability. Rather than building a centralized custom oracle, our mainnet architecture routes cross-chain EVM assets (like USDC) through audited bridges such as **Hashport** or **LayerZero** directly into Hedera HTS tokens.
+
 ## Tech Stack
 
 - **Frontend:** Next.js, React, Tailwind CSS
@@ -137,3 +145,12 @@ To handle massive concurrent funding events (the "Kickstarter Hug of Death"), V2
 - **Background Queues (Redis/BullMQ):** Offload heavy blockchain writes and smart contract interactions to background worker queues, ensuring the Next.js API layer remains instantly responsive even during large funding spikes.
 - **Read Replicas & Edge Caching:** Use Redis as a read-optimized cache for hot project statistics and Vercel Edge Functions to serve static Creator Pages globally without repeatedly hitting the primary database.
 - **Asynchronous Webhooks:** Replace blocking, synchronous UI loading states with asynchronous webhooks that notify funders as soon as their Hedera transactions are finalized, improving UX while keeping the protocol resilient under load.
+
+## Token Generation Event (TGE) & Airdrop
+
+SwiftFund is committed to decentralizing its ecosystem and rewarding the early believers who help us shape the future of creator monetization on Hedera. As part of our roadmap, we are officially announcing the upcoming **$SWIND Token Generation Event (TGE)**.
+
+- **Early Adopter Airdrop:** We believe in shared value. Users who actively beta test the SwiftFund testnet, provide valuable feedback, and help promote the product will be eligible to receive $SWIND tokens via an exclusive community airdrop.
+- **Secondary Markets:** Following the TGE, the $SWIND token will become publicly available for trading. Secondary users and the broader crypto community will be able to acquire $SWIND across supported Decentralized Exchanges (DEXs) and Centralized Exchanges (CEXs).
+
+*Note: A snapshot date and official airdrop criteria will be announced closer to the mainnet launch. Stay tuned!*
