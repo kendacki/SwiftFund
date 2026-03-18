@@ -20,7 +20,7 @@ const SWIND_TOKEN_ID = '0.0.8216024';
 
 // Logos in public/logos/
 const TOKENS = [
-  { symbol: 'HBAR', name: 'Hedera', logo: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/hbar.svg' },
+  { symbol: 'HBAR', name: 'Hedera', logo: '/logos/hedera-hbar.png' },
   { symbol: 'SWIND', name: 'SwiftFund', logo: '/logos/swiftfund-logo.png' },
   { symbol: 'USDC', name: 'USD', logo: '/usdc.png' },
 ] as const;
@@ -117,7 +117,7 @@ export default function PortfolioPage() {
       value: hbarUsdValue,
       raw: `${hbarAmount} HBAR`,
       color: '#8b5cf6',
-      icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/hbar.svg',
+      icon: '/logos/hedera-hbar.png',
     },
     {
       name: 'SwiftFund (SWIND)',
@@ -628,7 +628,7 @@ export default function PortfolioPage() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center -space-x-2">
                     <img
-                      src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/hbar.svg"
+                      src="/logos/hedera-hbar.png"
                       alt=""
                       className="h-6 w-6 rounded-full border-2 border-neutral-900 object-cover shrink-0"
                       aria-hidden
