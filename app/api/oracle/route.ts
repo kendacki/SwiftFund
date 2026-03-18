@@ -35,7 +35,12 @@ export async function POST(req: Request) {
     }
 
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const receipt = await provider.getTransactionReceipt(evmTxHash);
+
+    // Fetch both the receipt (for status) and the tx data (for the 'to' address)
+    const [receipt, tx] = await Promise.all([
+      provider.getTransactionReceipt(evmTxHash),
+      provider.getTransaction(evmTxHash),
+    ]);
 
     if (!receipt || receipt.status !== 1) {
       return NextResponse.json(
@@ -44,7 +49,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // *In strict production, parse logs to validate exact USDC transfer to vault.*
+    // Verify the transaction was sent to our official USDC contract
+    const officialUsdcAddress = process.env.TESTNET_USDC_ADDRESS?.trim();
+    if (!officialUsdcAddress) {
+      return NextResponse.json(
+        { error: 'TESTNET_USDC_ADDRESS is not set' },
+        { status: 500 }
+      );
+    }
+
+    if (!tx || tx.to?.toLowerCase() !== officialUsdcAddress.toLowerCase()) {
+      return NextResponse.json(
+        { error: 'Invalid contract interaction. Not official USDC.' },
+        { status: 400 }
+      );
+    }
+
+    // *Production Note: Parse logs to validate recipient + exact amount.*
 
     // 2) HEDERA EXECUTION (RELEASE FUNDS)
     const operatorId =
