@@ -12,6 +12,11 @@ import CreatorChart from '@/components/CreatorChart';
 import type { Project, ProjectStatus } from '@/lib/projects';
 import { PROJECT_STATUS_LABEL } from '@/lib/projects';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 function SpinnerIcon({ className }: { className?: string }) {
   return (
@@ -58,8 +63,12 @@ export default function CreatorDashboard() {
   const [formImage, setFormImage] = useState<File | null>(null);
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
   const [formAccountPdf, setFormAccountPdf] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [deckUrl, setDeckUrl] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [treasuryStatus, setTreasuryStatus] = useState<string | null>(null);
   const [isDistributing, setIsDistributing] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -174,8 +183,56 @@ export default function CreatorDashboard() {
     setFormImage(null);
     setFormImagePreview(null);
     setFormAccountPdf(null);
+    setDeckUrl(null);
     setFormError(null);
     setCreateOpen(true);
+  };
+
+  const toast = {
+    success: (message: string) => {
+      setToastType('success');
+      setToastMessage(message);
+      setTimeout(() => setToastMessage(null), 3500);
+    },
+    error: (message: string) => {
+      setToastType('error');
+      setToastMessage(message);
+      setTimeout(() => setToastMessage(null), 3500);
+    },
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Keep a local reference for UI (filename / remove button), but upload to Supabase.
+      setFormAccountPdf(file);
+
+      const { error } = await supabase.storage.from('pitch-decks').upload(filePath, file, {
+        upsert: true,
+        contentType: file.type || 'application/pdf',
+      });
+
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('pitch-decks').getPublicUrl(filePath);
+      const publicUrl = (data as { publicUrl?: string } | null)?.publicUrl ?? null;
+
+      setDeckUrl(publicUrl);
+      toast.success('Pitch deck securely uploaded to the blockchain vault!');
+    } catch (error) {
+      console.error('Supabase Upload Error:', error);
+      toast.error('Upload failed. Check console for details.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const onImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,7 +323,12 @@ export default function CreatorDashboard() {
           formData.set('earningsDistributionPercent', String(Math.round(num)));
         }
       }
-      if (formAccountPdf) formData.set('accountPdf', formAccountPdf);
+      if (deckUrl) {
+        formData.set('accountInfoPdfUrl', deckUrl);
+      } else if (formAccountPdf) {
+        // Fallback if upload didn't run (older flow)
+        formData.set('accountPdf', formAccountPdf);
+      }
 
       const res = await fetch('/api/projects', {
         method: 'POST',
@@ -784,21 +846,34 @@ export default function CreatorDashboard() {
                     <input
                       type="file"
                       accept="application/pdf"
-                      onChange={(e) => setFormAccountPdf(e.target.files?.[0] ?? null)}
+                      onChange={handleFileUpload}
+                      disabled={isUploading}
                       className="sr-only"
                     />
-                    {formAccountPdf ? formAccountPdf.name : 'Upload PDF'}
+                    {isUploading
+                      ? 'Uploading to secure vault...'
+                      : formAccountPdf
+                        ? formAccountPdf.name
+                        : 'Upload PDF'}
                   </label>
-                  {formAccountPdf && (
+                  {(formAccountPdf || deckUrl) && (
                     <button
                       type="button"
-                      onClick={() => setFormAccountPdf(null)}
+                      onClick={() => {
+                        setFormAccountPdf(null);
+                        setDeckUrl(null);
+                      }}
                       className="text-xs text-neutral-400 hover:text-red-400"
                     >
                       Remove
                     </button>
                   )}
                 </div>
+                {deckUrl && (
+                  <p className="text-emerald-400 font-medium text-sm mt-2">
+                    ✓ Deck successfully uploaded
+                  </p>
+                )}
                 <p className="font-heading text-[11px] text-neutral-500 mt-1 tracking-tight">
                   Optional PDF with account/identity info for verification. Max 5 MB.
                 </p>
@@ -828,6 +903,17 @@ export default function CreatorDashboard() {
               {formError && (
                 <p className="text-[11px] text-red-400 bg-red-500/10 rounded-lg p-1.5">
                   {formError}
+                </p>
+              )}
+              {toastMessage && (
+                <p
+                  className={`text-[11px] rounded-lg p-1.5 ${
+                    toastType === 'success'
+                      ? 'text-emerald-300 bg-emerald-500/10'
+                      : 'text-red-300 bg-red-500/10'
+                  }`}
+                >
+                  {toastMessage}
                 </p>
               )}
               <div className="pt-2">

@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
+import { createClient } from '@supabase/supabase-js';
 import { getPrivyClient } from '@/lib/privy';
 import { getProjects, insertProject, updateProjectStatus, getProjectById } from '@/lib/projectsDb';
 import type { Project, ProjectStatus } from '@/lib/projects';
 
 const PROJECTS_DATA_PATH = 'projects/data.json';
 const PROJECTS_IMAGE_PREFIX = 'projects/images/';
-const PROJECTS_DOCS_PREFIX = 'projects/docs/';
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4 MB
 const MAX_PDF_SIZE = 5 * 1024 * 1024; // 5 MB
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 function ensureBlobToken(): void {
   if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
@@ -51,7 +55,6 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    ensureBlobToken();
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -67,6 +70,7 @@ export async function POST(req: Request) {
     const imageFile = formData.get('image') as File | null;
     const earningsPercent = Number(formData.get('earningsDistributionPercent'));
     const accountPdf = formData.get('accountPdf') as File | null;
+    const accountInfoPdfUrlFromClient = (formData.get('accountInfoPdfUrl') as string | null)?.trim() || '';
 
     if (!title || !creatorName || !handle) {
       return NextResponse.json(
@@ -86,6 +90,7 @@ export async function POST(req: Request) {
 
     let imageUrl = '';
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      ensureBlobToken();
       if (imageFile.size > MAX_IMAGE_SIZE) {
         return NextResponse.json({ error: 'Image too large (max 4 MB)' }, { status: 400 });
       }
@@ -98,19 +103,39 @@ export async function POST(req: Request) {
     }
 
     let accountInfoPdfUrl = '';
-    if (accountPdf && accountPdf instanceof File && accountPdf.size > 0) {
+    if (accountInfoPdfUrlFromClient) {
+      accountInfoPdfUrl = accountInfoPdfUrlFromClient;
+    } else if (accountPdf && accountPdf instanceof File && accountPdf.size > 0) {
       if (accountPdf.type !== 'application/pdf') {
         return NextResponse.json({ error: 'Account document must be a PDF' }, { status: 400 });
       }
       if (accountPdf.size > MAX_PDF_SIZE) {
         return NextResponse.json({ error: 'PDF too large (max 5 MB)' }, { status: 400 });
       }
-      const pdfBlob = await put(`${PROJECTS_DOCS_PREFIX}${id}.pdf`, accountPdf, {
-        access: 'public',
-        contentType: 'application/pdf',
-        addRandomSuffix: false,
-      });
-      accountInfoPdfUrl = pdfBlob.url;
+
+      if (!supabaseUrl || !supabaseKey) {
+        return NextResponse.json(
+          { error: 'Supabase Storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+          { status: 500 }
+        );
+      }
+
+      const filePath = `${userId}/${id}.pdf`;
+      const bytes = new Uint8Array(await accountPdf.arrayBuffer());
+      const { error: uploadError } = await supabase.storage
+        .from('pitch-decks')
+        .upload(filePath, bytes, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        return NextResponse.json({ error: 'Failed to upload PDF to Supabase Storage' }, { status: 500 });
+      }
+
+      const { data } = supabase.storage.from('pitch-decks').getPublicUrl(filePath);
+      accountInfoPdfUrl = data?.publicUrl ?? '';
     }
 
     const newProject: Project = {
