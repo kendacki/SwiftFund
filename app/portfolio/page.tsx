@@ -79,6 +79,7 @@ export default function PortfolioPage() {
   // Dashboard state
   const [hbarBalance, setHbarBalance] = useState<number>(0);
   const [swindBalance, setSwindBalance] = useState<number>(0);
+  const [usdcAmount, setUsdcAmount] = useState<number>(0);
   const [hbarUsdPrice, setHbarUsdPrice] = useState<number>(0);
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -100,9 +101,6 @@ export default function PortfolioPage() {
   const [hbarPrice, setHbarPrice] = useState<number>(0.1142);
   const [swindPrice] = useState<number>(0.05);
 
-  const adminAddress = '0x05ea4448280b9FD96785D2F036Bfc5C2ae7BF225';
-  const usdcAmount =
-    address?.toLowerCase() === adminAddress.toLowerCase() ? 250 : 0;
   const [usdcPrice] = useState<number>(1.0); // USDC is pegged to $1
   // Single source of truth for portfolio math
   const hbarAmount = hbarBalance;
@@ -177,6 +175,38 @@ export default function PortfolioPage() {
       setAddress(user.wallet.address);
     }
   }, [wallets, user]);
+
+  // Fetch live Sepolia USDC balance for the connected Privy wallet.
+  useEffect(() => {
+    const fetchLiveUsdc = async () => {
+      try {
+        const activeWallet = wallets[0];
+        if (!activeWallet) {
+          setUsdcAmount(0);
+          return;
+        }
+
+        const provider = await activeWallet.getEthereumProvider();
+        const ethersProvider = new ethers.BrowserProvider(provider);
+
+        const usdcAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+        const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
+        const usdcContract = new ethers.Contract(
+          usdcAddress,
+          usdcAbi,
+          ethersProvider
+        );
+
+        const balance = await usdcContract.balanceOf(activeWallet.address);
+        const formattedBalance = ethers.formatUnits(balance, 6);
+        setUsdcAmount(parseFloat(formattedBalance));
+      } catch (error) {
+        console.error('Failed to fetch live USDC balance:', error);
+      }
+    };
+
+    fetchLiveUsdc();
+  }, [wallets]);
 
   // Fetch live dashboard data (balances + recent transactions) from Hedera mirror node.
   useEffect(() => {
@@ -533,7 +563,10 @@ export default function PortfolioPage() {
   };
 
   const handleSwap = async () => {
-    setIsSwapLoading(true);
+    const setIsSwapping = setIsSwapLoading;
+    const swapAmount = swapFromAmount;
+
+    setIsSwapping(true);
     try {
       const activeWallet = wallets[0];
       if (!activeWallet) throw new Error('Please connect a wallet first.');
@@ -542,26 +575,22 @@ export default function PortfolioPage() {
         throw new Error('Swap currently supports USDC → HBAR only.');
       }
 
-      const amountNum = Number(swapFromAmount);
+      const amountNum = Number(swapAmount);
       if (!Number.isFinite(amountNum) || amountNum <= 0) {
         throw new Error('Enter a valid USDC amount.');
       }
 
+      // 1. Unify external + embedded wallets via Privy
       const provider = await activeWallet.getEthereumProvider();
       const ethersProvider = new ethers.BrowserProvider(provider);
       const signer = await ethersProvider.getSigner();
 
+      // 2. Setup real USDC ERC-20 transfer interaction
       const usdcAbi = ['function transfer(address to, uint256 amount) returns (bool)'];
       const usdcAddress =
-        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS?.trim() || '';
+        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS || '0xYourTestnetUSDC';
       const treasuryAddress =
-        process.env.NEXT_PUBLIC_EVM_TREASURY?.trim() || '';
-
-      if (!usdcAddress || !treasuryAddress) {
-        throw new Error(
-          'Missing NEXT_PUBLIC_TESTNET_USDC_ADDRESS or NEXT_PUBLIC_EVM_TREASURY.'
-        );
-      }
+        process.env.NEXT_PUBLIC_EVM_TREASURY || '0xYourTreasury';
 
       const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
       const amountInUnits = ethers.parseUnits(amountNum.toString(), 6);
@@ -584,12 +613,22 @@ export default function PortfolioPage() {
         body: JSON.stringify({
           evmTxHash: tx.hash,
           hederaAccountId,
-          amount: amountNum,
+          amount: swapAmount,
         }),
       });
 
       const result = await response.json();
       if (result?.success) {
+        setTransactions((prev) => [
+          {
+            id: `${Date.now()}-usdc-swap`,
+            hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
+            amount: `-${amountNum.toLocaleString(undefined, { maximumFractionDigits: 6 })} USDC`,
+            tokenType: 'USDC',
+            time: new Date().toLocaleTimeString(),
+          },
+          ...prev,
+        ]);
         toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
         setIsSwapModalOpen(false);
       } else {
@@ -599,7 +638,7 @@ export default function PortfolioPage() {
       console.error('Swap Error:', error);
       toast.error(error?.message || 'Swap failed.');
     } finally {
-      setIsSwapLoading(false);
+      setIsSwapping(false);
     }
   };
 
