@@ -465,7 +465,7 @@ export default function DiscoverPage() {
                 Equivalent: {hbarRequired.toFixed(2)} HBAR
               </p>
               <p className="text-xs text-neutral-500">
-                Step 1: Associate SWIND with your wallet. Step 2: Send the required HBAR to the creator via the treasury.
+                Step 1: Enter your desired funding amount in USD. Step 2: Confirm the transaction. The system will automatically convert and deduct the equivalent testnet HBAR.
               </p>
             </div>
 
