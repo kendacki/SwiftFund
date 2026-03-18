@@ -14,10 +14,6 @@ import { PROJECT_STATUS_LABEL } from '@/lib/projects';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 function SpinnerIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -208,6 +204,14 @@ export default function CreatorDashboard() {
     setIsUploading(true);
 
     try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
+      if (!supabaseUrl || !supabaseKey) {
+        toast.error('Upload unavailable: Supabase env vars are not set.');
+        return;
+      }
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${fileName}`;
