@@ -12,9 +12,25 @@ SwiftFund bridges the gap between creators and their communities. Traditional cr
 
 We built SwiftFund to change that. By leveraging smart contracts, SwiftFund allows creators to raise capital in HBAR, while automatically and proportionally distributing a share of their future revenue back to the original funders. It is transparent, automated, and built for scale. Just as importantly, SwiftFund addresses the biggest risk in Web3 crowdfunding—creator ghosting by securely bridging verifiable Web2 revenue data into our on-chain protocol.
 
-## How It Works
+## How SwiftFund Works
 
-SwiftFund operates on a highly gas-efficient, two-sided marketplace model.
+**1. Creator Onboarding**
+Creators link their YouTube channels to the platform to open decentralized funding pools based on their channel's potential ad revenue.
+
+**2. Community Funding**
+Fans support their favorite creators by contributing funds (USDC or HBAR) directly into these pools. For the testnet demo, funding amounts are entered in USD but utilize native HBAR under the hood.
+
+**3. Smart Contract Registration**
+The Hedera Smart Contract securely records each funder's wallet address and proportional share. To protect the platform's token economy, reward tokens are not issued upfront.
+
+**4. Yield Accrual**
+As the creator generates real-world YouTube ad revenue, the smart contract automatically calculates and allocates a percentage of that revenue as yield to the original funders.
+
+**5. Claiming Rewards**
+Fans track their active allocations through their portfolio dashboard and manually claim their accrued yield directly into their Web3 wallets.
+
+**6. Cross-Chain Onboarding**
+To maximize accessibility, users from other networks (like Ethereum) can bridge their EVM assets into Hedera-native tokens using the platform's built-in cross-chain swap interface.
 
 ### For the Funder
 
