@@ -137,12 +137,11 @@ export default function CreatorEarningsPage() {
             <h1 className="mt-4 font-heading text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
               Earnings &amp; Yield Analytics
             </h1>
-            <p className="mt-2 font-heading text-xs sm:text-sm text-neutral-400 max-w-2xl tracking-tight">
-              Track your channel&apos;s growth and see exactly how your earnings are
-              shared with your funders. <span className="italic">Not monetized on
-              YouTube yet? We’ve enabled a live Demo Mode with sample data so you
-              can explore the platform while you grow!</span>
-            </p>
+            <div className="bg-white/5 border border-white/10 rounded-lg py-2 px-4 mb-6 w-fit">
+              <p className="text-sm text-white font-medium tracking-wide">
+                Track your earnings on YouTube over the campaign period
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1">
