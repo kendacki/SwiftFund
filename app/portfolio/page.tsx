@@ -639,6 +639,12 @@ export default function PortfolioPage() {
                       className="h-6 w-6 rounded-full border-2 border-neutral-900 object-cover shrink-0"
                       aria-hidden
                     />
+                    <img
+                      src="/usdc.png"
+                      alt=""
+                      className="h-6 w-6 rounded-full border-2 border-neutral-900 object-cover shrink-0"
+                      aria-hidden
+                    />
                   </div>
                   <span className="font-heading text-sm font-medium text-neutral-300 tracking-tight">
                     Breakdown
