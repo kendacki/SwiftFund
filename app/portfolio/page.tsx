@@ -74,6 +74,7 @@ export default function PortfolioPage() {
   const [swapFromToken, setSwapFromToken] = useState<'USDC' | 'HBAR'>('USDC');
   const [swapToToken, setSwapToToken] = useState<'USDC' | 'HBAR'>('HBAR');
   const [swapFromAmount, setSwapFromAmount] = useState<string>('0');
+  const [swapHederaAccountId, setSwapHederaAccountId] = useState<string>('');
 
   // Dashboard state
   const [hbarBalance, setHbarBalance] = useState<number>(0);
@@ -141,6 +142,13 @@ export default function PortfolioPage() {
   );
 
   const toast = {
+    loading: (message: string) => {
+      setToastMessage(message);
+    },
+    error: (message: string) => {
+      setToastMessage(message);
+      setTimeout(() => setToastMessage(null), 3500);
+    },
     success: (message: string) => {
       setToastMessage(message);
       setTimeout(() => setToastMessage(null), 3000);
@@ -524,13 +532,75 @@ export default function PortfolioPage() {
     }, 2000);
   };
 
-  const handleInitiateSwap = () => {
+  const handleSwap = async () => {
     setIsSwapLoading(true);
-    setTimeout(() => {
-      toast.success('Swap successful! Assets bridged to Hedera.');
-      setIsSwapModalOpen(false);
+    try {
+      const activeWallet = wallets[0];
+      if (!activeWallet) throw new Error('Please connect a wallet first.');
+
+      if (swapFromToken !== 'USDC') {
+        throw new Error('Swap currently supports USDC → HBAR only.');
+      }
+
+      const amountNum = Number(swapFromAmount);
+      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+        throw new Error('Enter a valid USDC amount.');
+      }
+
+      const provider = await activeWallet.getEthereumProvider();
+      const ethersProvider = new ethers.BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
+
+      const usdcAbi = ['function transfer(address to, uint256 amount) returns (bool)'];
+      const usdcAddress =
+        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS?.trim() || '';
+      const treasuryAddress =
+        process.env.NEXT_PUBLIC_EVM_TREASURY?.trim() || '';
+
+      if (!usdcAddress || !treasuryAddress) {
+        throw new Error(
+          'Missing NEXT_PUBLIC_TESTNET_USDC_ADDRESS or NEXT_PUBLIC_EVM_TREASURY.'
+        );
+      }
+
+      const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
+      const amountInUnits = ethers.parseUnits(amountNum.toString(), 6);
+
+      toast.loading('Initiating USDC transfer...');
+      const tx = await usdcContract.transfer(treasuryAddress, amountInUnits);
+
+      toast.loading('Waiting for EVM block confirmation...');
+      await tx.wait();
+
+      const hederaAccountId = swapHederaAccountId.trim();
+      if (!hederaAccountId) {
+        throw new Error('Enter your Hedera account ID (0.0.xxxxx).');
+      }
+
+      toast.loading('Verifying with Cross-Chain Oracle...');
+      const response = await fetch('/api/oracle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evmTxHash: tx.hash,
+          hederaAccountId,
+          amount: amountNum,
+        }),
+      });
+
+      const result = await response.json();
+      if (result?.success) {
+        toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
+        setIsSwapModalOpen(false);
+      } else {
+        throw new Error(result?.error || 'Swap failed.');
+      }
+    } catch (error: any) {
+      console.error('Swap Error:', error);
+      toast.error(error?.message || 'Swap failed.');
+    } finally {
       setIsSwapLoading(false);
-    }, 2000);
+    }
   };
 
   const qrUrl = address
@@ -1161,9 +1231,20 @@ export default function PortfolioPage() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="block text-xs text-neutral-500">Hedera account ID</label>
+                <input
+                  type="text"
+                  value={swapHederaAccountId}
+                  onChange={(e) => setSwapHederaAccountId(e.target.value)}
+                  placeholder="0.0.xxxxx"
+                  className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono"
+                />
+              </div>
+
               <button
                 type="button"
-                onClick={handleInitiateSwap}
+                onClick={handleSwap}
                 disabled={isSwapLoading}
                 className="w-full mt-6 bg-red-600 hover:bg-red-700 disabled:bg-red-600/80 disabled:cursor-wait text-white font-bold py-3 rounded-lg transition-all"
               >
