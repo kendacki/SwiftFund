@@ -5,14 +5,12 @@ import { getPrivyClient } from '@/lib/privy';
 import { getProjects, insertProject, updateProjectStatus, getProjectById } from '@/lib/projectsDb';
 import type { Project, ProjectStatus } from '@/lib/projects';
 
+export const dynamic = 'force-dynamic';
+
 const PROJECTS_DATA_PATH = 'projects/data.json';
 const PROJECTS_IMAGE_PREFIX = 'projects/images/';
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4 MB
 const MAX_PDF_SIZE = 5 * 1024 * 1024; // 5 MB
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 function ensureBlobToken(): void {
   if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
@@ -55,6 +53,10 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
+    const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -113,7 +115,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'PDF too large (max 5 MB)' }, { status: 400 });
       }
 
-      if (!supabaseUrl || !supabaseKey) {
+      if (!supabase) {
         return NextResponse.json(
           { error: 'Supabase Storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
           { status: 500 }
