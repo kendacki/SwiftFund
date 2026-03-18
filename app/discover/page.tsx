@@ -437,7 +437,7 @@ export default function DiscoverPage() {
                   Fund {selectedProject.creatorName}
                 </h2>
                 <div className="bg-white/5 border border-white/10 rounded-lg py-2 px-4 mb-6 mx-auto w-fit">
-                  <p className="text-sm text-white text-center font-medium">
+                  <p className="text-xs text-neutral-300 text-center font-light tracking-wide">
                     Prove your loyalty and get rewarded.
                   </p>
                 </div>
