@@ -1249,11 +1249,11 @@ export default function PortfolioPage() {
                 type="button"
                 onClick={handleInitiateSwap}
                 disabled={isSwapLoading}
-                className="w-full mt-6 bg-red-600 hover:bg-red-500 disabled:bg-red-600/80 disabled:cursor-wait text-black font-bold py-3 rounded-lg transition-all"
+                className="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/80 disabled:cursor-wait text-white font-bold py-3 rounded-lg transition-all"
               >
                 {isSwapLoading ? (
                   <span className="inline-flex items-center justify-center gap-2">
-                    <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 text-black" />
+                    <SpinnerIcon className="h-4 w-4 animate-spin shrink-0 text-white" />
                     Bridging Assets...
                   </span>
                 ) : (
