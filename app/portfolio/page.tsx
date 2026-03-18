@@ -33,6 +33,8 @@ interface DashboardTx {
   amount: string;
   tokenType: TokenSymbol | string;
   time: string;
+  from?: string;
+  to?: string;
 }
 
 /** Funded project entry for claim yield list (from API or mock). */
@@ -181,15 +183,9 @@ export default function PortfolioPage() {
     const fetchLiveUsdc = async () => {
       try {
         const activeWallet = wallets[0];
-        if (!activeWallet) {
-          console.log('🛑 DEBUG: No active wallet detected by Privy.');
-          return;
-        }
+        if (!activeWallet) return;
 
-        console.log('✅ DEBUG: Privy Wallet detected:', activeWallet.address);
-        console.log('⏳ DEBUG: Pinging Sepolia RPC for USDC balance...');
-
-        // Use a public Sepolia RPC so it works regardless of the wallet's active network.
+        // 1) Fetch the total balance (works regardless of wallet network)
         const provider = new ethers.JsonRpcProvider(
           'https://ethereum-sepolia-rpc.publicnode.com'
         );
@@ -199,48 +195,74 @@ export default function PortfolioPage() {
         const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
         const balance = await usdcContract.balanceOf(activeWallet.address);
-        console.log('🔗 DEBUG: Raw balance from chain:', balance.toString());
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
-        console.log('💰 DEBUG: Formatted Balance to inject:', formattedBalance);
         setUsdcAmount(formattedBalance);
 
-        // Inject into transaction history if they have a balance (avoid duplicates).
-        if (formattedBalance > 0) {
-          console.log('🔄 DEBUG: Injecting transaction into history state...');
-          setTransactions((prev) => {
-            const exists = prev.some(
-              (tx) => tx.id === 'usdc-balance' || tx.tokenType === 'USDC'
-            );
-            if (exists) {
-              console.log(
-                '⚠️ DEBUG: Transaction already exists in state, skipping.'
-              );
-              return prev;
-            }
+        // 2) Fetch real USDC transfer history from Sepolia Etherscan
+        const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY?.trim();
+        const etherscanUrl =
+          `https://api-sepolia.etherscan.io/api?module=account&action=tokentx` +
+          `&contractaddress=${usdcAddress}` +
+          `&address=${activeWallet.address}` +
+          `&page=1&offset=50&sort=desc` +
+          (apiKey ? `&apikey=${apiKey}` : '');
 
-            return [
-              {
-                id: 'usdc-balance',
-                hash: 'USDC balance',
-                amount: `+${formattedBalance.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })} USDC`,
+        const historyRes = await fetch(etherscanUrl);
+        const historyData = await historyRes.json();
+
+        if (historyData?.status === '1' && Array.isArray(historyData?.result)) {
+          const addrLower = activeWallet.address.toLowerCase();
+
+          const realUsdcTransactions: DashboardTx[] = historyData.result.map(
+            (tx: any) => {
+              const isReceive =
+                typeof tx?.to === 'string' &&
+                tx.to.toLowerCase() === addrLower;
+
+              const amountNum = parseFloat(ethers.formatUnits(tx?.value ?? '0', 6));
+              const sign = isReceive ? '+' : '-';
+              const amountLabel = `${sign}${amountNum.toLocaleString(undefined, {
+                maximumFractionDigits: 6,
+              })} USDC`;
+
+              const ts = Number(tx?.timeStamp);
+              const time = Number.isFinite(ts)
+                ? new Date(ts * 1000).toLocaleString()
+                : '—';
+
+              const hashStr = String(tx?.hash ?? '');
+              const shortHash =
+                hashStr.length >= 14
+                  ? `${hashStr.slice(0, 8)}…${hashStr.slice(-6)}`
+                  : hashStr || '—';
+
+              return {
+                id: hashStr || `${Date.now()}-${Math.random()}`,
+                hash: shortHash,
+                amount: amountLabel,
                 tokenType: 'USDC',
-                time: new Date().toLocaleTimeString(),
-              },
-              ...prev,
-            ];
-          });
-        } else {
-          console.log(
-            '⚠️ DEBUG: Balance is 0, skipping transaction history injection.'
+                time,
+                from: typeof tx?.from === 'string' ? tx.from : undefined,
+                to: typeof tx?.to === 'string' ? tx.to : undefined,
+              };
+            }
           );
+
+          // 3) Safely merge with existing Hedera/SWIND txs without overwriting
+          setTransactions((prev) => {
+            const nonUsdcTxs = prev.filter((t) => t.tokenType !== 'USDC');
+            const combined = [...realUsdcTransactions, ...nonUsdcTxs].sort(
+              (a, b) => {
+                const bt = Date.parse(b.time);
+                const at = Date.parse(a.time);
+                return (Number.isNaN(bt) ? 0 : bt) - (Number.isNaN(at) ? 0 : at);
+              }
+            );
+            return combined;
+          });
         }
       } catch (error) {
-        console.error(
-          '❌ DEBUG ERROR: Failed to fetch live USDC balance:',
-          error
-        );
+        console.error('❌ Failed to fetch live USDC data:', error);
       }
     };
 
@@ -289,7 +311,7 @@ export default function PortfolioPage() {
           if (!cancelled) {
             setHbarBalance(0);
             setSwindBalance(0);
-            setTransactions([]);
+            setTransactions((prev) => prev.filter((t) => t.tokenType === 'USDC'));
           }
           return;
         }
@@ -300,7 +322,7 @@ export default function PortfolioPage() {
           if (!cancelled) {
             setHbarBalance(0);
             setSwindBalance(0);
-            setTransactions([]);
+            setTransactions((prev) => prev.filter((t) => t.tokenType === 'USDC'));
           }
           return;
         }
@@ -409,12 +431,15 @@ export default function PortfolioPage() {
           });
 
           if (!cancelled) {
-            setTransactions(mapped);
+            setTransactions((prev) => {
+              const usdcTxs = prev.filter((t) => t.tokenType === 'USDC');
+              return [...usdcTxs, ...mapped];
+            });
           }
         }
       } catch {
         if (!cancelled) {
-          setTransactions([]);
+          setTransactions((prev) => prev.filter((t) => t.tokenType === 'USDC'));
         }
       } finally {
         if (!cancelled) {
@@ -1094,7 +1119,15 @@ export default function PortfolioPage() {
                           key={tx.id}
                           className="border-b border-neutral-800/80 last:border-0 transition-all duration-200 hover:bg-neutral-900 hover:scale-[1.01]"
                         >
-                          <td className="px-4 sm:px-6 py-3 font-mono text-neutral-300">{tx.hash}</td>
+                          <td className="px-4 sm:px-6 py-3 font-mono text-neutral-300">
+                            {tx.from ? (
+                              <span title={tx.from}>
+                                {tx.from.slice(0, 6)}…{tx.from.slice(-4)}
+                              </span>
+                            ) : (
+                              tx.hash
+                            )}
+                          </td>
                           <td className="px-4 sm:px-6 py-3 font-heading text-white">{tx.amount}</td>
                           <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType}</td>
                           <td className="px-4 sm:px-6 py-3 text-neutral-500">{tx.time}</td>
