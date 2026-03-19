@@ -625,11 +625,6 @@ export default function PortfolioPage() {
         throw new Error('Swap currently supports USDC → HBAR only.');
       }
 
-      const amountNum = Number(swapAmount);
-      if (!Number.isFinite(amountNum) || amountNum <= 0) {
-        throw new Error('Enter a valid USDC amount.');
-      }
-
       // 1. Unify external + embedded wallets via Privy
       const provider = await activeWallet.getEthereumProvider();
       const ethersProvider = new ethers.BrowserProvider(provider);
@@ -648,10 +643,23 @@ export default function PortfolioPage() {
         '0x000000000000000000000000000000000000dEaD';
 
       const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
-      const amountInUnits = ethers.parseUnits(amountNum.toString(), 6);
+
+      // 1. Sanitize the input to prevent parsing errors
+      const safeAmount = swapAmount.toString().trim();
+      if (!safeAmount || isNaN(Number(safeAmount)) || Number(safeAmount) <= 0) {
+        throw new Error('Please enter a valid swap amount.');
+      }
+
+      // USDC uses 6 decimals
+      const amountInUnits = ethers.parseUnits(safeAmount, 6);
 
       toast.loading('Initiating USDC transfer...');
-      const tx = await usdcContract.transfer(treasuryAddress, amountInUnits);
+      // 2. Execute with an explicit gas limit override
+      // A standard ERC-20 transfer costs ~65,000 gas. We provide 100,000 as a safe buffer.
+      // This forces the wallet to skip the slow estimation phase and load instantly.
+      const tx = await usdcContract.transfer(treasuryAddress, amountInUnits, {
+        gasLimit: 100000,
+      });
 
       toast.loading('Waiting for EVM block confirmation...');
       await tx.wait();
