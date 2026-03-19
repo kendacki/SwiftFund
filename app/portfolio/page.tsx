@@ -85,6 +85,7 @@ export default function PortfolioPage() {
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [usdcTransactions, setUsdcTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Claim yield (funder pull)
   const [claimCards, setClaimCards] = useState<ClaimCard[]>([]);
@@ -695,6 +696,23 @@ export default function PortfolioPage() {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`
     : '';
 
+  const combinedTransactions = [...transactions, ...usdcTransactions].sort(
+    (a: any, b: any) =>
+      new Date((b as any).date ?? b.time).getTime() -
+      new Date((a as any).date ?? a.time).getTime()
+  );
+
+  // Category filter placeholder: default to 'All' until UI tabs are wired
+  const activeFilter: 'All' | 'Receive' | 'Send' | 'Swap' = 'All';
+
+  const filteredTransactions = combinedTransactions.filter((tx: any) =>
+    activeFilter === 'All' ? true : tx.type === activeFilter
+  );
+
+  const displayedTransactions = isExpanded
+    ? filteredTransactions
+    : filteredTransactions.slice(0, 4);
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -1052,7 +1070,8 @@ export default function PortfolioPage() {
                 <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
                   Transaction history
                 </h2>
-                <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-lg p-1">
+                <div className="flex items-center gap-3">
+                  <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-lg p-1">
                   {(['recent', 'day', 'month', 'all'] as const).map((filter) => (
                     <button
                       key={filter}
@@ -1067,6 +1086,14 @@ export default function PortfolioPage() {
                       {filter}
                     </button>
                   ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded((prev) => !prev)}
+                    className="text-xs font-medium text-neutral-400 hover:text-white transition-colors"
+                  >
+                    {isExpanded ? 'Show less' : 'View all'}
+                  </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -1089,7 +1116,7 @@ export default function PortfolioPage() {
                           Loading transactions…
                         </td>
                       </tr>
-                    ) : [...transactions, ...usdcTransactions].length === 0 ? (
+                    ) : filteredTransactions.length === 0 ? (
                       <tr>
                         <td
                           colSpan={4}
@@ -1099,13 +1126,7 @@ export default function PortfolioPage() {
                         </td>
                       </tr>
                     ) : (
-                      [...transactions, ...usdcTransactions]
-                        .sort(
-                          (a: any, b: any) =>
-                            new Date(b.date ?? b.time).getTime() -
-                            new Date(a.date ?? a.time).getTime()
-                        )
-                        .map((tx: any) => (
+                      displayedTransactions.map((tx: any) => (
                         <tr
                           key={tx.id}
                           className="border-b border-neutral-800/80 last:border-0 transition-all duration-200 hover:bg-neutral-900 hover:scale-[1.01]"
