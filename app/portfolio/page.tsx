@@ -620,10 +620,15 @@ export default function PortfolioPage() {
 
       // 2. Setup real USDC ERC-20 transfer interaction
       const usdcAbi = ['function transfer(address to, uint256 amount) returns (bool)'];
+      // Use official Sepolia USDC and a valid 42-character hex fallback so ethers doesn't trigger ENS lookups
       const usdcAddress =
-        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS || '0xYourTestnetUSDC';
+        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
+        '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+
+      // Ensure the treasury fallback is a valid 42-character EVM address
       const treasuryAddress =
-        process.env.NEXT_PUBLIC_EVM_TREASURY || '0xYourTreasury';
+        process.env.NEXT_PUBLIC_EVM_TREASURY ||
+        '0x000000000000000000000000000000000000dEaD';
 
       const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
       const amountInUnits = ethers.parseUnits(amountNum.toString(), 6);
