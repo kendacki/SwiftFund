@@ -85,7 +85,6 @@ export default function PortfolioPage() {
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [usdcTransactions, setUsdcTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Claim yield (funder pull)
   const [claimCards, setClaimCards] = useState<ClaimCard[]>([]);
@@ -619,9 +618,46 @@ export default function PortfolioPage() {
         throw new Error('Please enter a valid swap amount.');
       }
 
-      // 1. Initialize strict Ethers v6 BrowserProvider
+      // 1. Initialize the provider from the active Privy wallet
       const ethereumProvider = await activeWallet.getEthereumProvider();
       const browserProvider = new ethers.BrowserProvider(ethereumProvider);
+
+      // 2. CRITICAL: Force the Embedded Wallet to be on Sepolia (Chain ID 11155111 / 0xaa36a7)
+      const network = await browserProvider.getNetwork();
+      if (network.chainId !== 11155111n) {
+        console.log(
+          '🔄 SWAP DEBUG: Wallet is on wrong network. Switching to Sepolia...'
+        );
+        try {
+          await ethereumProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }],
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            await ethereumProvider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0xaa36a7',
+                  chainName: 'Sepolia',
+                  rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
+                  nativeCurrency: {
+                    name: 'SepoliaETH',
+                    symbol: 'ETH',
+                    decimals: 18,
+                  },
+                  blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+                },
+              ],
+            });
+          } else {
+            throw new Error('Failed to switch to Sepolia network.');
+          }
+        }
+      }
+
+      // 3. Now that we are 100% on Sepolia, get the Signer
       const signer = await browserProvider.getSigner();
 
       const usdcAddress =
@@ -639,23 +675,19 @@ export default function PortfolioPage() {
       const amountInUnits = ethers.parseUnits(safeAmount.toString(), 6);
 
       console.log(
-        '⏳ SWAP DEBUG: Wallet popup triggered. Waiting for user signature...'
+        "⏳ SWAP DEBUG: Privy popup triggered (Will show as 'Contract Interaction')..."
       );
 
-      // 2. Execute without gas overrides. Let MetaMask natively simulate the payload.
+      // 4. Execute the transfer
       const tx = await usdcContract.transfer(treasuryAddress, amountInUnits);
-
       console.log('🟢 SWAP DEBUG: Tx sent! Hash:', tx.hash);
 
-      // 3. Force the app to wait for exactly 1 block confirmation before pinging the Oracle
-      console.log(
-        '⏳ SWAP DEBUG: Waiting for 1 block confirmation from Sepolia...'
-      );
+      // 5. Wait for 1 block confirmation
+      console.log('⏳ SWAP DEBUG: Waiting for network to mine block...');
       const receipt = await tx.wait(1);
-
       console.log('✅ SWAP DEBUG: Block confirmed!', receipt.hash);
 
-      // 4. Ping Oracle ONLY after confirmation
+      // 6. Ping Oracle
       toast.loading('Verifying with Cross-Chain Oracle...');
       const response = await fetch('/api/oracle', {
         method: 'POST',
@@ -704,16 +736,23 @@ export default function PortfolioPage() {
       new Date((a as any).date ?? a.time).getTime()
   );
 
-  // Category filter placeholder: default to 'All' until UI tabs are wired
-  const activeFilter: 'All' | 'Receive' | 'Send' | 'Swap' = 'All';
+  const activeFilter = txFilter; // 'recent' | 'day' | 'month' | 'all'
 
-  const filteredTransactions = combinedTransactions.filter((tx: any) =>
-    activeFilter === 'All' ? true : tx.type === activeFilter
-  );
+  const displayedTransactions = combinedTransactions.filter((tx: any) => {
+    const txTime = new Date((tx as any).date ?? tx.time).getTime();
+    const now = Date.now();
 
-  const displayedTransactions = isExpanded
-    ? filteredTransactions
-    : filteredTransactions.slice(0, 4);
+    const hours12 = 12 * 60 * 60 * 1000;
+    const hours24 = 24 * 60 * 60 * 1000;
+    const days30 = 30 * 24 * 60 * 60 * 1000;
+
+    if (activeFilter === 'recent') return now - txTime <= hours12;
+    if (activeFilter === 'day') return now - txTime <= hours24;
+    if (activeFilter === 'month') return now - txTime <= days30;
+
+    // 'all' shows everything
+    return true;
+  });
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
@@ -1109,7 +1148,7 @@ export default function PortfolioPage() {
                           Loading transactions…
                         </td>
                       </tr>
-                    ) : filteredTransactions.length === 0 ? (
+                    ) : displayedTransactions.length === 0 ? (
                       <tr>
                         <td
                           colSpan={4}
@@ -1142,17 +1181,6 @@ export default function PortfolioPage() {
                   </tbody>
                 </table>
               </div>
-              {filteredTransactions.length > 4 && (
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded((prev) => !prev)}
-                  className="mt-2 w-full py-2 text-xs sm:text-sm text-center text-neutral-400 hover:text-white transition-colors border-t border-neutral-800"
-                >
-                  {isExpanded
-                    ? 'Show less'
-                    : `View all ${filteredTransactions.length} transactions`}
-                </button>
-              )}
             </motion.section>
           </>
         )}
