@@ -236,6 +236,9 @@ export default function PortfolioPage() {
     };
 
     fetchLiveUsdc();
+    const intervalId = setInterval(fetchLiveUsdc, 30000);
+
+    return () => clearInterval(intervalId);
   }, [wallets]);
 
   // Fetch live dashboard data (balances + recent transactions) from Hedera mirror node.
@@ -1070,7 +1073,7 @@ export default function PortfolioPage() {
                           Loading transactions…
                         </td>
                       </tr>
-                    ) : transactions.length === 0 ? (
+                    ) : [...transactions, ...usdcTransactions].length === 0 ? (
                       <tr>
                         <td
                           colSpan={4}
