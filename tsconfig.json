@@ -7,6 +7,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
+    "target": "es2020",
     "strict": false,
     "noEmit": true,
     "incremental": true,
