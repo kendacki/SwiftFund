@@ -1198,9 +1198,9 @@ export default function PortfolioPage() {
       {/* Send funds modal */}
       {isSendModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-black border border-zinc-700 rounded-2xl w-full max-w-md p-6 shadow-2xl text-white">
+          <div className="bg-black border border-zinc-800 p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,1)] w-full max-w-md text-white">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
+              <h2 className="font-heading text-lg font-bold text-white tracking-tight">
                 Send Funds
               </h2>
               <button
@@ -1220,11 +1220,11 @@ export default function PortfolioPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">Token</label>
+                <label className="block text-xs text-white font-bold tracking-tight mb-1">Token</label>
                 <select
                   value={sendToken}
                   onChange={(e) => setSendToken(e.target.value as 'HBAR' | 'SWIND')}
-                  className="w-full rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 >
                   <option value="HBAR">HBAR</option>
                   <option value="SWIND">SWIND</option>
@@ -1232,7 +1232,7 @@ export default function PortfolioPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">Amount (USD)</label>
+                <label className="block text-xs text-white font-bold tracking-tight mb-1">Amount (USD)</label>
                 <input
                   type="text"
                   placeholder="0.00"
@@ -1241,12 +1241,12 @@ export default function PortfolioPage() {
                     setSendAmount(e.target.value);
                     setSendError(null);
                   }}
-                  className="w-full rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-red-600 outline-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">Recipient address</label>
+                <label className="block text-xs text-white font-bold tracking-tight mb-1">Recipient address</label>
                 <input
                   type="text"
                   placeholder="Enter wallet address (0x... or 0.0...)"
@@ -1255,7 +1255,7 @@ export default function PortfolioPage() {
                     setSendTo(e.target.value);
                     setSendError(null);
                   }}
-                  className="w-full rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-red-600 outline-none font-mono"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 />
               </div>
 
@@ -1406,7 +1406,7 @@ export default function PortfolioPage() {
                       }
                     })();
                   }}
-                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-all"
+                  className="bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg shadow-red-900/20 transition-all active:scale-95"
                 >
                   Review Send
                 </button>
@@ -1419,9 +1419,9 @@ export default function PortfolioPage() {
       {/* Swap modal: Cross-chain Swap/Bridge */}
       {isSwapModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-black border border-zinc-700 rounded-2xl w-full max-w-md p-6 shadow-2xl text-white">
+          <div className="bg-black border border-zinc-800 p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,1)] w-full max-w-md text-white">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading text-lg font-semibold text-white tracking-tight">
+              <h2 className="font-heading text-lg font-bold text-white tracking-tight">
                 Cross-Chain Swap
               </h2>
               <button
@@ -1439,16 +1439,16 @@ export default function PortfolioPage() {
               </button>
             </div>
 
-            <p className="text-xs text-white/70 mb-4">Powered by Hedera Hashport Oracle</p>
+            <p className="text-xs text-white/70 mb-4 font-bold tracking-tight">Powered by Hedera Hashport Oracle</p>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="block text-xs text-neutral-500">From</label>
+                <label className="block text-xs text-white font-bold tracking-tight">From</label>
                 <div className="flex gap-3">
                   <select
                     value={swapFromToken}
                     onChange={(e) => setSwapFromToken(e.target.value as 'USDC' | 'HBAR')}
-                  className="w-32 rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
+                  className="w-32 bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                   >
                     <option value="USDC">USDC - EVM</option>
                     <option value="HBAR">HBAR - Hedera</option>
@@ -1459,7 +1459,7 @@ export default function PortfolioPage() {
                     value={swapFromAmount}
                     onChange={(e) => setSwapFromAmount(e.target.value)}
                     placeholder="0.00"
-                  className="flex-1 rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-red-600 outline-none font-mono"
+                  className="flex-1 bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                   />
                 </div>
               </div>
@@ -1483,12 +1483,12 @@ export default function PortfolioPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-neutral-500">To</label>
+                <label className="block text-xs text-white font-bold tracking-tight">To</label>
                 <div className="flex gap-3">
                   <select
                     value={swapToToken}
                     onChange={(e) => setSwapToToken(e.target.value as 'USDC' | 'HBAR')}
-                    className="w-32 rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white focus:border-red-600 outline-none"
+                    className="w-32 bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                   >
                     <option value="HBAR">HBAR - Hedera</option>
                     <option value="USDC">USDC - EVM</option>
@@ -1497,7 +1497,7 @@ export default function PortfolioPage() {
                     type="text"
                     readOnly
                     value={swapToAmountStr}
-                    className="flex-1 rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-white/90 outline-none font-mono"
+                    className="flex-1 bg-zinc-900 border border-zinc-800 text-white rounded-xl p-4 focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                   />
                 </div>
               </div>
@@ -1506,7 +1506,7 @@ export default function PortfolioPage() {
                 type="button"
                 onClick={handleSwap}
                 disabled={isSwapLoading}
-                className="w-full mt-6 bg-red-600 hover:bg-red-700 disabled:bg-red-600/80 disabled:cursor-wait text-white font-bold py-3 rounded-lg transition-all"
+                className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg shadow-red-900/20 transition-all active:scale-95 disabled:bg-red-600/80 disabled:cursor-wait"
               >
                 {isSwapLoading ? (
                   <span className="inline-flex items-center justify-center gap-2">
