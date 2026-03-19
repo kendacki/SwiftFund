@@ -83,6 +83,7 @@ export default function PortfolioPage() {
   const [swindBalance, setSwindBalance] = useState<number>(0);
   const [usdcAmount, setUsdcAmount] = useState<number>(0);
   const [hbarUsdPrice, setHbarUsdPrice] = useState<number>(0);
+  const [isHbarSynced, setIsHbarSynced] = useState<boolean>(false);
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [usdcTransactions, setUsdcTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -249,6 +250,41 @@ export default function PortfolioPage() {
     return () => clearInterval(intervalId);
   }, [wallets]);
 
+  // Fetch real (mainnet) HBAR balance for the connected wallet (EVM address).
+  // This replaces any placeholder ratio logic for the HBAR figure.
+  const fetchRealHbarBalance = async (evmAddress: string) => {
+    try {
+      const res = await fetch(
+        `https://mainnet-public.mirrornode.hedera.com/api/v1/accounts/${evmAddress}`
+      );
+      const json = await res.json();
+      const tinybars = json?.balance;
+      const tinybarNum =
+        typeof tinybars === 'number' ? tinybars : Number(tinybars);
+
+      if (!Number.isFinite(tinybarNum) || tinybarNum < 0) {
+        setHbarBalance(0);
+        setIsHbarSynced(false);
+        return 0;
+      }
+
+      const hbars = Math.max(0, tinybarNum) / 100_000_000; // tinybars -> HBAR
+      setHbarBalance(hbars);
+      setIsHbarSynced(true);
+      return hbars;
+    } catch (err) {
+      console.error('Failed to fetch real mainnet HBAR balance:', err);
+      setIsHbarSynced(false);
+      return 0;
+    }
+  };
+
+  // Initial mainnet HBAR sync after we have the connected address.
+  useEffect(() => {
+    if (!address) return;
+    fetchRealHbarBalance(address);
+  }, [address]);
+
   // Fetch live dashboard data (balances + recent transactions) from Hedera mirror node.
   useEffect(() => {
     if (!address) return;
@@ -287,9 +323,8 @@ export default function PortfolioPage() {
         const accountRes = await fetch(
           `https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}`
         );
-        if (!accountRes.ok) {
+          if (!accountRes.ok) {
           if (!cancelled) {
-            setHbarBalance(0);
             setSwindBalance(0);
             setTransactions([]);
           }
@@ -300,7 +335,6 @@ export default function PortfolioPage() {
         const accountId: string | undefined = accountJson?.account;
         if (!accountId) {
           if (!cancelled) {
-            setHbarBalance(0);
             setSwindBalance(0);
             setTransactions([]);
           }
@@ -321,8 +355,7 @@ export default function PortfolioPage() {
             entry?.tokens ?? [];
 
           if (typeof tinybar === 'number') {
-            const hbar = tinybar / 1e8;
-            if (!cancelled) setHbarBalance(hbar);
+            // HBAR balance is synced from mainnet Mirror Node separately.
           }
 
           const swindToken = tokens.find((t) => t.token_id === SWIND_TOKEN_ID);
@@ -611,6 +644,7 @@ export default function PortfolioPage() {
     const swapAmount = swapFromAmount;
 
     setIsSwapping(true);
+    const prevHbarBalance = hbarBalance;
     try {
       const activeWallet = wallets[0];
       if (!activeWallet) throw new Error('Please connect a wallet first.');
@@ -723,6 +757,32 @@ export default function PortfolioPage() {
         ]);
         toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
         setIsSwapModalOpen(false);
+
+        // Refresh mainnet HBAR after swap (oracle + transfer finality simulation)
+        setTimeout(async () => {
+          try {
+            const newHbar = await fetchRealHbarBalance(activeWallet.address);
+            const delta = newHbar - prevHbarBalance;
+
+            if (delta > 0) {
+              setTransactions((prev) => [
+                {
+                  id: `${Date.now()}-hb-receive`,
+                  hash: String(result.hederaTxId || '—').slice(0, 16),
+                  amount: `+${delta.toLocaleString(undefined, {
+                    maximumFractionDigits: 4,
+                  })} HBAR`,
+                  tokenType: 'HBAR',
+                  time: new Date().toLocaleString(),
+                  date: new Date().toISOString(),
+                } as any,
+                ...prev,
+              ]);
+            }
+          } catch (err) {
+            console.error('Post-swap HBAR refresh failed:', err);
+          }
+        }, 2000);
       } else {
         throw new Error(result?.error || 'Swap failed.');
       }
@@ -906,15 +966,25 @@ export default function PortfolioPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-heading text-sm font-semibold text-white tracking-tight">
-                          {token.symbol === 'HBAR'
-                            ? `${hbarBalance.toLocaleString(undefined, {
+                          {token.symbol === 'HBAR' ? (
+                            <>
+                              {hbarBalance.toLocaleString(undefined, {
                                 maximumFractionDigits: 4,
-                              })} HBAR`
-                            : token.symbol === 'SWIND'
-                            ? `${swindBalance.toLocaleString(undefined, {
-                                maximumFractionDigits: 4,
-                              })} SWIND`
-                            : `${usdcAmount.toLocaleString()} USDC`}
+                              })}{' '}
+                              HBAR
+                              {isHbarSynced && (
+                                <span className="ml-2 text-[11px] font-bold text-emerald-300">
+                                  Synced
+                                </span>
+                              )}
+                            </>
+                          ) : token.symbol === 'SWIND' ? (
+                            `${swindBalance.toLocaleString(undefined, {
+                              maximumFractionDigits: 4,
+                            })} SWIND`
+                          ) : (
+                            `${usdcAmount.toLocaleString()} USDC`
+                          )}
                         </p>
                         <p className="font-heading text-xs text-neutral-500 tracking-tight">
                           {token.name}
