@@ -181,8 +181,10 @@ export default function PortfolioPage() {
 
   // Fetch live Sepolia USDC balance for the connected Privy wallet.
   useEffect(() => {
-    const activeWallet = wallets[0];
-    if (!activeWallet?.address) return;
+    if (!address) return;
+
+    // Reset when switching accounts, but do not clear on temporary indexing/API gaps.
+    setUsdcTransactions([]);
 
     const fetchLiveUsdc = async () => {
       try {
@@ -194,49 +196,64 @@ export default function PortfolioPage() {
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
         const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
-        const balance = await usdcContract.balanceOf(activeWallet.address);
+        const balance = await usdcContract.balanceOf(address);
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
         setUsdcAmount(formattedBalance);
 
         // 2. Fetch Real Transaction History (Unlocked with API Key)
         const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
-        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWallet.address}&page=1&offset=50&sort=desc&apikey=${apiKey}`;
+        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${address}&page=1&offset=50&sort=desc&apikey=${apiKey}`;
 
         const historyRes = await fetch(etherscanUrl);
         const historyData = await historyRes.json();
 
         // 3. Process and Isolate the Data
-        if (historyData.status === '1' && historyData.result.length > 0) {
+        if (historyData.status === '1') {
           console.log(
             '🟢 DEBUG: Etherscan Success! Found',
-            historyData.result.length,
+            historyData.result?.length ?? 0,
             'transactions.'
           );
 
-          const realUsdcTransactions = historyData.result.map((tx: any) => ({
-            id: tx.hash,
-            type:
-              tx.to.toLowerCase() === activeWallet.address.toLowerCase()
-                ? 'Receive'
-                : 'Send',
-            asset: 'USDC',
-            amount: parseFloat(ethers.formatUnits(tx.value, 6)),
-            // `date` is used for sorting/filtering (ISO string parses reliably)
-            date: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-            // `time` is used for display
-            time: new Date(parseInt(tx.timeStamp) * 1000).toLocaleString(),
-            icon: '/usdc.png',
-            status: 'Completed',
-            from: tx.from,
-            to: tx.to,
-          }));
+          if ((historyData.result?.length ?? 0) > 0) {
+            const realUsdcTransactions = historyData.result.map((tx: any) => {
+              const isReceive =
+                tx.to?.toLowerCase?.() === address.toLowerCase();
 
-          // Safely store in isolated state
-          setUsdcTransactions(realUsdcTransactions);
+              const amountNum = parseFloat(
+                ethers.formatUnits(tx.value, 6)
+              );
+              const sign = isReceive ? '+' : '-';
+
+              return {
+                id: tx.hash,
+                type: isReceive ? 'Receive' : 'Send',
+                asset: 'USDC',
+                tokenType: 'USDC',
+                amount: `${sign}${amountNum.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })} USDC`,
+                // `date` is used for sorting/filtering (ISO string parses reliably)
+                date: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
+                // `time` is used for display
+                time: new Date(parseInt(tx.timeStamp) * 1000).toLocaleString(),
+                icon: '/usdc.png',
+                status: 'Completed',
+                from: tx.from,
+                to: tx.to,
+                hash: tx.hash,
+              };
+            });
+
+            // Safely store in isolated state
+            setUsdcTransactions(realUsdcTransactions);
+          } else {
+            // Keep existing history until the indexer catches up (avoids the swap/deposit disappearing right after action).
+            console.log('⚠️ DEBUG: Etherscan returned 0 USDC txs; keeping existing history.');
+          }
         } else {
           console.log('⚠️ DEBUG: Etherscan Status:', historyData.message);
-          // Strict Mode: No fake data.
-          setUsdcTransactions([]);
+          // Keep existing history if the API is temporarily failing / not indexed yet.
         }
       } catch (error) {
         console.error('❌ DEBUG ERROR: Failed to fetch live USDC data:', error);
@@ -247,7 +264,7 @@ export default function PortfolioPage() {
     const intervalId = setInterval(fetchLiveUsdc, 30000);
 
     return () => clearInterval(intervalId);
-  }, [wallets]);
+  }, [address]);
 
   // Fetch live dashboard data (balances + recent transactions) from Hedera mirror node.
   useEffect(() => {
@@ -706,19 +723,32 @@ export default function PortfolioPage() {
 
       const result = await response.json();
       if (result?.success) {
-        setTransactions((prev) => [
-          {
-            id: `${Date.now()}-usdc-swap`,
-            hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
-            amount: `-${Number(swapAmount).toLocaleString(undefined, {
-              maximumFractionDigits: 6,
-            })} USDC`,
+        const amountNum = Number(safeAmount);
+        const formattedAbs = amountNum.toLocaleString(undefined, {
+          maximumFractionDigits: 6,
+        });
+
+        // Insert into isolated USDC state so Hedera polling doesn't overwrite it.
+        setUsdcTransactions((prev: any[]) => {
+          const newTx = {
+            id: tx.hash,
+            hash: tx.hash,
+            type: 'Send',
+            asset: 'USDC',
             tokenType: 'USDC',
-            time: new Date().toLocaleTimeString(),
+            amount: `-${formattedAbs} USDC`,
+            time: new Date().toLocaleString(),
             date: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
+            icon: '/usdc.png',
+            status: 'Completed',
+            from: activeWallet.address,
+            to: treasuryAddress,
+          };
+
+          const withoutDupe = prev.filter((t: any) => t.id !== newTx.id);
+          return [newTx, ...withoutDupe];
+        });
+
         toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
         setIsSwapModalOpen(false);
       } else {
