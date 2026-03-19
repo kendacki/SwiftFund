@@ -686,7 +686,9 @@ export default function PortfolioPage() {
           {
             id: `${Date.now()}-usdc-swap`,
             hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
-            amount: `-${amountNum.toLocaleString(undefined, { maximumFractionDigits: 6 })} USDC`,
+            amount: `-${Number(swapAmount).toLocaleString(undefined, {
+              maximumFractionDigits: 6,
+            })} USDC`,
             tokenType: 'USDC',
             time: new Date().toLocaleTimeString(),
           },
