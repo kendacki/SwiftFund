@@ -1319,7 +1319,9 @@ export default function PortfolioPage() {
                             throw new Error('HBAR price is not available yet.');
                           }
                           const hbarToSend = usdAmount / hbarPrice;
-                          const value = ethers.parseUnits(hbarToSend.toString(), 8);
+                          // Hedera HBAR uses 8 decimals. Clamp to avoid parseUnits underflow/precision issues.
+                          const hbarToSendStr = hbarToSend.toFixed(8);
+                          const value = ethers.parseUnits(hbarToSendStr, 8);
                           toast.loading('Sending HBAR...');
                           const tx = await signer.sendTransaction({ to: recipientEvm, value });
                           await tx.wait();
@@ -1330,7 +1332,9 @@ export default function PortfolioPage() {
                             throw new Error('SWIND price is not available yet.');
                           }
                           const swindToSend = usdAmount / swindPrice;
-                          const amountInt = ethers.parseUnits(swindToSend.toString(), 2); // smallest units
+                          // SWIND uses 2 decimals. Clamp to avoid parseUnits underflow/precision issues.
+                          const swindToSendStr = swindToSend.toFixed(2);
+                          const amountInt = ethers.parseUnits(swindToSendStr, 2); // smallest units
 
                           // int64 range check (Hedera HTS precompile expects int64)
                           const maxInt64 = (1n << 63n) - 1n;
