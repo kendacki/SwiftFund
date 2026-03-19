@@ -9,11 +9,12 @@ import Link from 'next/link';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/Button';
-import { claimYield } from '@/lib/fundCreator';
+import { claimYield, SWIND_EVM_ADDRESS } from '@/lib/fundCreator';
 import {
   TREASURY_EVM_ADDRESS,
   SWIFT_FUND_TREASURY_ABI,
 } from '@/constants/contracts';
+import { AccountId } from '@hashgraph/sdk';
 
 // Fixed SWIND token ID on Hedera testnet.
 const SWIND_TOKEN_ID = '0.0.8216024';
@@ -1287,8 +1288,85 @@ export default function PortfolioPage() {
                       setSendError('Please enter a positive amount.');
                       return;
                     }
-                    // TODO: wire to actual send transaction
-                    setSendError('Send is not yet connected to the network. Coming soon.');
+                    (async () => {
+                      try {
+                        const activeWallet = wallets[0];
+                        if (!activeWallet) throw new Error('Please connect a wallet first.');
+
+                        const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(to);
+                        const isHederaAccountId = /^0\.0\.\d+$/.test(to);
+                        if (!isEvmAddress && !isHederaAccountId) {
+                          throw new Error('Recipient must be a Hedera account ID (0.0.xxxxx) or an EVM 0x address.');
+                        }
+
+                        // Convert Hedera accountId -> solidity address so HTS precompile can route.
+                        const recipientEvm = isEvmAddress
+                          ? to
+                          : (() => {
+                              const solidity = AccountId.fromString(to).toSolidityAddress();
+                              return `0x${solidity}`;
+                            })();
+
+                        const ethereumProvider = await activeWallet.getEthereumProvider();
+                        const browserProvider = new ethers.BrowserProvider(ethereumProvider);
+                        const signer = await browserProvider.getSigner();
+                        const senderEvm = await signer.getAddress();
+
+                        const usdAmount = Number(amt);
+
+                        if (sendToken === 'HBAR') {
+                          if (!hbarPrice || hbarPrice <= 0) {
+                            throw new Error('HBAR price is not available yet.');
+                          }
+                          const hbarToSend = usdAmount / hbarPrice;
+                          const value = ethers.parseUnits(hbarToSend.toString(), 8);
+                          toast.loading('Sending HBAR...');
+                          const tx = await signer.sendTransaction({ to: recipientEvm, value });
+                          await tx.wait();
+                          toast.success('HBAR sent successfully.');
+                        } else {
+                          // SWIND uses 2 decimals on Hedera.
+                          if (!swindPrice || swindPrice <= 0) {
+                            throw new Error('SWIND price is not available yet.');
+                          }
+                          const swindToSend = usdAmount / swindPrice;
+                          const amountInt = ethers.parseUnits(swindToSend.toString(), 2); // smallest units
+
+                          // int64 range check (Hedera HTS precompile expects int64)
+                          const maxInt64 = (1n << 63n) - 1n;
+                          if (amountInt > maxInt64) {
+                            throw new Error('Amount too large.');
+                          }
+
+                          const HTS_PRECOMPILE_ADDRESS =
+                            '0x0000000000000000000000000000000000000167';
+                          const HTS_TRANSFER_TOKEN_ABI = [
+                            'function transferToken(address token, address sender, address recipient, int64 amount) external returns (int64 responseCode)',
+                          ];
+                          const hts = new ethers.Contract(
+                            HTS_PRECOMPILE_ADDRESS,
+                            HTS_TRANSFER_TOKEN_ABI,
+                            signer
+                          );
+
+                          toast.loading('Sending SWIND...');
+                          const tx = await hts.transferToken(
+                            SWIND_EVM_ADDRESS,
+                            senderEvm,
+                            recipientEvm,
+                            amountInt
+                          );
+                          await tx.wait();
+                          toast.success('SWIND sent successfully.');
+                        }
+
+                        setIsSendModalOpen(false);
+                        setSendError(null);
+                      } catch (err: unknown) {
+                        const msg = err instanceof Error ? err.message : 'Send failed.';
+                        setSendError(msg);
+                      }
+                    })();
                   }}
                   className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold text-white transition-colors"
                 >
