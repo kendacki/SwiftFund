@@ -88,8 +88,8 @@ export async function POST(req: Request) {
     );
 
     const sendTx = await new TransferTransaction()
-      .addHbarTransfer(operatorId, Hbar.from(-amount))
-      .addHbarTransfer(destinationAddress, Hbar.from(amount))
+      .addHbarTransfer(operatorId, new Hbar(-amount))
+      .addHbarTransfer(destinationAddress, new Hbar(amount))
       .execute(client);
 
     const receiptHedera = await sendTx.getReceipt(client);
