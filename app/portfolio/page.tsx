@@ -184,19 +184,36 @@ export default function PortfolioPage() {
     const fetchLiveUsdc = async () => {
       try {
         const activeWallet = wallets[0];
-        if (!activeWallet) return;
+        if (!activeWallet) {
+          console.log('🛑 DEBUG [BALANCE]: No wallet connected.');
+          return;
+        }
 
-        // 1) Fetch the total balance (works regardless of wallet network)
+        console.log(
+          '✅ DEBUG [BALANCE]: App is checking this exact address:',
+          activeWallet.address
+        );
+
         const provider = new ethers.JsonRpcProvider(
           'https://ethereum-sepolia-rpc.publicnode.com'
         );
-
         const usdcAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
         const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
         const balance = await usdcContract.balanceOf(activeWallet.address);
+        console.log(
+          '🔗 DEBUG [BALANCE]: Raw balance string from blockchain:',
+          balance.toString()
+        );
+
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
+        console.log(
+          '💰 DEBUG [BALANCE]: Final Formatted USDC to display:',
+          formattedBalance
+        );
+
+        // Force the state update
         setUsdcAmount(formattedBalance);
 
         // 2) Fetch real USDC transfer history from Sepolia Etherscan
