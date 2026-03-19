@@ -181,11 +181,11 @@ export default function PortfolioPage() {
 
   // Fetch live Sepolia USDC balance for the connected Privy wallet.
   useEffect(() => {
+    const activeWallet = wallets[0];
+    if (!activeWallet?.address) return;
+
     const fetchLiveUsdc = async () => {
       try {
-        const activeWallet = wallets[0];
-        if (!activeWallet) return;
-
         // 1. Fetch Balance (Confirmed Working)
         const provider = new ethers.JsonRpcProvider(
           'https://ethereum-sepolia-rpc.publicnode.com'
@@ -221,7 +221,10 @@ export default function PortfolioPage() {
                 : 'Send',
             asset: 'USDC',
             amount: parseFloat(ethers.formatUnits(tx.value, 6)),
-            date: new Date(parseInt(tx.timeStamp) * 1000).toLocaleString(),
+            // `date` is used for sorting/filtering (ISO string parses reliably)
+            date: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
+            // `time` is used for display
+            time: new Date(parseInt(tx.timeStamp) * 1000).toLocaleString(),
             icon: '/usdc.png',
             status: 'Completed',
             from: tx.from,
@@ -346,11 +349,13 @@ export default function PortfolioPage() {
           const mapped: DashboardTx[] = txs.map((tx, idx) => {
             const consensus = tx.consensus_timestamp as string | undefined;
             let time = '—';
+            let date = new Date(0).toISOString();
             if (consensus) {
               const [secondsStr] = consensus.split('.');
               const seconds = Number(secondsStr);
               if (!Number.isNaN(seconds)) {
                 time = new Date(seconds * 1000).toLocaleString();
+                date = new Date(seconds * 1000).toISOString();
               }
             }
 
@@ -404,6 +409,7 @@ export default function PortfolioPage() {
               amount: amountLabel,
               tokenType,
               time,
+              date,
             };
           });
 
@@ -711,6 +717,7 @@ export default function PortfolioPage() {
             })} USDC`,
             tokenType: 'USDC',
             time: new Date().toLocaleTimeString(),
+            date: new Date().toISOString(),
           },
           ...prev,
         ]);
@@ -731,11 +738,8 @@ export default function PortfolioPage() {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`
     : '';
 
-  const combinedTransactions = [...transactions, ...usdcTransactions].sort(
-    (a: any, b: any) =>
-      new Date((b as any).date ?? b.time).getTime() -
-      new Date((a as any).date ?? a.time).getTime()
-  );
+  const combinedTransactions = [...(transactions || []), ...(usdcTransactions || [])]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const activeFilter = txFilter; // 'recent' | 'day' | 'month' | 'all'
 
