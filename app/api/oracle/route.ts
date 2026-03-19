@@ -6,17 +6,14 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as {
-      evmTxHash?: string;
-      hederaAccountId?: string;
-      amount?: number | string;
-    };
+    const { evmTxHash, destinationAddress, amount: amountRaw } =
+      (await req.json()) as {
+        evmTxHash?: string;
+        destinationAddress?: string;
+        amount?: number | string;
+      };
 
-    const evmTxHash = body?.evmTxHash;
-    const hederaAccountId = body?.hederaAccountId;
-    const amountRaw = body?.amount;
-
-    if (!evmTxHash || !hederaAccountId) {
+    if (!evmTxHash || !destinationAddress) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -91,8 +88,8 @@ export async function POST(req: Request) {
     );
 
     const sendTx = await new TransferTransaction()
-      .addHbarTransfer(operatorId, new Hbar(-amount))
-      .addHbarTransfer(hederaAccountId, new Hbar(amount))
+      .addHbarTransfer(operatorId, Hbar.from(-amount))
+      .addHbarTransfer(destinationAddress, Hbar.from(amount))
       .execute(client);
 
     const receiptHedera = await sendTx.getReceipt(client);

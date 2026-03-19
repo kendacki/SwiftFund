@@ -76,7 +76,6 @@ export default function PortfolioPage() {
   const [swapFromToken, setSwapFromToken] = useState<'USDC' | 'HBAR'>('USDC');
   const [swapToToken, setSwapToToken] = useState<'USDC' | 'HBAR'>('HBAR');
   const [swapFromAmount, setSwapFromAmount] = useState<string>('0');
-  const [swapHederaAccountId, setSwapHederaAccountId] = useState<string>('');
 
   // Dashboard state
   const [hbarBalance, setHbarBalance] = useState<number>(0);
@@ -664,19 +663,14 @@ export default function PortfolioPage() {
       toast.loading('Waiting for EVM block confirmation...');
       await tx.wait();
 
-      const hederaAccountId = swapHederaAccountId.trim();
-      if (!hederaAccountId) {
-        throw new Error('Enter your Hedera account ID (0.0.xxxxx).');
-      }
-
       toast.loading('Verifying with Cross-Chain Oracle...');
       const response = await fetch('/api/oracle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           evmTxHash: tx.hash,
-          hederaAccountId,
-          amount: swapAmount,
+          destinationAddress: activeWallet.address,
+          amount: safeAmount,
         }),
       });
 
@@ -1347,17 +1341,6 @@ export default function PortfolioPage() {
                     className="flex-1 rounded-lg bg-neutral-900/60 border border-neutral-800 px-3 py-2 text-sm text-white/90 outline-none font-mono"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs text-neutral-500">Hedera account ID</label>
-                <input
-                  type="text"
-                  value={swapHederaAccountId}
-                  onChange={(e) => setSwapHederaAccountId(e.target.value)}
-                  placeholder="0.0.xxxxx"
-                  className="w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-red-600 outline-none font-mono"
-                />
               </div>
 
               <button
