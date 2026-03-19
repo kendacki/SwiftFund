@@ -183,16 +183,9 @@ export default function PortfolioPage() {
     const fetchLiveUsdc = async () => {
       try {
         const activeWallet = wallets[0];
-        if (!activeWallet) {
-          console.log('🛑 DEBUG [BALANCE]: No wallet connected.');
-          return;
-        }
+        if (!activeWallet) return;
 
-        console.log(
-          '✅ DEBUG [BALANCE]: App is checking this exact address:',
-          activeWallet.address
-        );
-
+        // 1. Fetch Balance (Confirmed Working)
         const provider = new ethers.JsonRpcProvider(
           'https://ethereum-sepolia-rpc.publicnode.com'
         );
@@ -201,35 +194,28 @@ export default function PortfolioPage() {
         const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
         const balance = await usdcContract.balanceOf(activeWallet.address);
-        console.log(
-          '🔗 DEBUG [BALANCE]: Raw balance string from blockchain:',
-          balance.toString()
-        );
-
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
-        console.log(
-          '💰 DEBUG [BALANCE]: Final Formatted USDC to display:',
-          formattedBalance
-        );
-
-        // Force the state update
         setUsdcAmount(formattedBalance);
 
-        // 2) Fetch real USDC transfer history from Sepolia Etherscan
-        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWallet.address}&page=1&offset=50&sort=desc`;
+        // 2. Fetch Real Transaction History (Unlocked with API Key)
+        const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
+        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWallet.address}&page=1&offset=50&sort=desc&apikey=${apiKey}`;
 
         const historyRes = await fetch(etherscanUrl);
         const historyData = await historyRes.json();
 
-        console.log('🔍 DEBUG: Etherscan API Response:', historyData);
-
-        if (historyData?.status === '1' && Array.isArray(historyData?.result) && historyData.result.length > 0) {
-          const addrLower = activeWallet.address.toLowerCase();
+        // 3. Process and Isolate the Data
+        if (historyData.status === '1' && historyData.result.length > 0) {
+          console.log(
+            '🟢 DEBUG: Etherscan Success! Found',
+            historyData.result.length,
+            'transactions.'
+          );
 
           const realUsdcTransactions = historyData.result.map((tx: any) => ({
             id: tx.hash,
             type:
-              tx.to.toLowerCase() === addrLower
+              tx.to.toLowerCase() === activeWallet.address.toLowerCase()
                 ? 'Receive'
                 : 'Send',
             asset: 'USDC',
@@ -241,17 +227,15 @@ export default function PortfolioPage() {
             to: tx.to,
           }));
 
-          // Set to our isolated state instead of the shared state
+          // Safely store in isolated state
           setUsdcTransactions(realUsdcTransactions);
         } else {
-          // STRICT MODE: No fake data. If the API fails or returns no data, we set an empty array.
-          console.log(
-            '⚠️ DEBUG: Etherscan returned no valid transactions. Enforcing strict real-data UI.'
-          );
+          console.log('⚠️ DEBUG: Etherscan Status:', historyData.message);
+          // Strict Mode: No fake data.
           setUsdcTransactions([]);
         }
       } catch (error) {
-        console.error('❌ Failed to fetch live USDC data:', error);
+        console.error('❌ DEBUG ERROR: Failed to fetch live USDC data:', error);
       }
     };
 
