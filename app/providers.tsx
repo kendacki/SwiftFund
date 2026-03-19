@@ -1,21 +1,12 @@
 'use client';
 
 import { PrivyProvider } from '@privy-io/react-auth';
+import { mainnet, sepolia } from 'viem/chains';
 
 interface ProvidersProps {
   children: React.ReactNode;
   appId: string;
 }
-
-// Hedera Testnet for embedded wallet creation (chainId 296)
-// Helps avoid walletProxy.create timeout by targeting the correct chain.
-const hederaTestnet = {
-  id: 296,
-  name: 'Hedera Testnet',
-  nativeCurrency: { name: 'HBAR', symbol: 'HBAR', decimals: 8 },
-  rpcUrls: { default: { http: ['https://testnet.hashio.io/api'] } },
-  blockExplorers: { default: { name: 'HashScan', url: 'https://hashscan.io/testnet' } },
-} as const;
 
 export default function Providers({ children, appId }: ProvidersProps) {
   if (!appId) {
@@ -37,16 +28,17 @@ export default function Providers({ children, appId }: ProvidersProps) {
     <PrivyProvider
       appId={appId}
       config={{
-        appearance: {
-          theme: 'dark',
-          accentColor: '#dc2626',
-          showWalletLoginFirst: false,
-        },
-        defaultChain: hederaTestnet,
-        supportedChains: [hederaTestnet],
+        // 1. Tell the UI to show both Email/Social AND external Wallets (MetaMask)
+        loginMethods: ['email', 'wallet', 'google', 'apple'],
+
+        // 2. Configure how the embedded wallets behave
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          createOnLogin: 'users-without-wallets', // Only create an embedded wallet if they don't use MetaMask
         },
+
+        // 3. Ensure Sepolia is in your supported chains
+        defaultChain: sepolia,
+        supportedChains: [sepolia, mainnet], // Imported from viem/chains
       }}
     >
       {children}

@@ -619,47 +619,49 @@ export default function PortfolioPage() {
         throw new Error('Please enter a valid swap amount.');
       }
 
-      // 1. Get the actual user's wallet provider (NOT the read-only public node)
+      // 1. Initialize strict Ethers v6 BrowserProvider
       const ethereumProvider = await activeWallet.getEthereumProvider();
       const browserProvider = new ethers.BrowserProvider(ethereumProvider);
       const signer = await browserProvider.getSigner();
 
-      // 2. Setup the contract WITH the Signer so the wallet knows exactly what to do
       const usdcAddress =
         process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
         '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+      const treasuryAddress =
+        process.env.NEXT_PUBLIC_EVM_TREASURY ||
+        '0x000000000000000000000000000000000000dEaD';
+
       const usdcAbi = [
         'function transfer(address to, uint256 value) public returns (bool)',
       ];
       const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
 
-      const treasuryAddress =
-        process.env.NEXT_PUBLIC_EVM_TREASURY ||
-        '0x000000000000000000000000000000000000dEaD';
-      const amountInUnits = ethers.parseUnits(safeAmount, 6);
-
-      console.log('⏳ SWAP DEBUG: Requesting wallet signature...');
-
-      // 3. Send the transaction with the gas limit buffer
-      const tx = await usdcContract.transfer(treasuryAddress, amountInUnits, {
-        gasLimit: 100000,
-      });
+      const amountInUnits = ethers.parseUnits(safeAmount.toString(), 6);
 
       console.log(
-        '🟢 SWAP DEBUG: Transaction sent to mempool! Hash:',
-        tx.hash
+        '⏳ SWAP DEBUG: Wallet popup triggered. Waiting for user signature...'
       );
 
-      // 4. CRITICAL: wait for Sepolia to mine the block
-      const receipt = await tx.wait();
-      console.log('✅ SWAP DEBUG: Block mined successfully!', receipt);
+      // 2. Execute without gas overrides. Let MetaMask natively simulate the payload.
+      const tx = await usdcContract.transfer(treasuryAddress, amountInUnits);
 
+      console.log('🟢 SWAP DEBUG: Tx sent! Hash:', tx.hash);
+
+      // 3. Force the app to wait for exactly 1 block confirmation before pinging the Oracle
+      console.log(
+        '⏳ SWAP DEBUG: Waiting for 1 block confirmation from Sepolia...'
+      );
+      const receipt = await tx.wait(1);
+
+      console.log('✅ SWAP DEBUG: Block confirmed!', receipt.hash);
+
+      // 4. Ping Oracle ONLY after confirmation
       toast.loading('Verifying with Cross-Chain Oracle...');
       const response = await fetch('/api/oracle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          evmTxHash: tx.hash,
+          evmTxHash: receipt.hash, // Use the confirmed receipt hash
           destinationAddress: activeWallet.address,
           amount: safeAmount,
         }),
@@ -1070,8 +1072,7 @@ export default function PortfolioPage() {
                 <h2 className="font-heading text-sm font-semibold text-white uppercase tracking-wider">
                   Transaction history
                 </h2>
-                <div className="flex items-center gap-3">
-                  <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-lg p-1">
+                <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-lg p-1">
                   {(['recent', 'day', 'month', 'all'] as const).map((filter) => (
                     <button
                       key={filter}
@@ -1086,14 +1087,6 @@ export default function PortfolioPage() {
                       {filter}
                     </button>
                   ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsExpanded((prev) => !prev)}
-                    className="text-xs font-medium text-neutral-400 hover:text-white transition-colors"
-                  >
-                    {isExpanded ? 'Show less' : 'View all'}
-                  </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -1149,6 +1142,17 @@ export default function PortfolioPage() {
                   </tbody>
                 </table>
               </div>
+              {filteredTransactions.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  className="mt-2 w-full py-2 text-xs sm:text-sm text-center text-neutral-400 hover:text-white transition-colors border-t border-neutral-800"
+                >
+                  {isExpanded
+                    ? 'Show less'
+                    : `View all ${filteredTransactions.length} transactions`}
+                </button>
+              )}
             </motion.section>
           </>
         )}
