@@ -244,7 +244,11 @@ export default function PortfolioPage() {
           // Set to our isolated state instead of the shared state
           setUsdcTransactions(realUsdcTransactions);
         } else {
-          console.log('⚠️ DEBUG: Etherscan returned no transactions or an error.');
+          // STRICT MODE: No fake data. If the API fails or returns no data, we set an empty array.
+          console.log(
+            '⚠️ DEBUG: Etherscan returned no valid transactions. Enforcing strict real-data UI.'
+          );
+          setUsdcTransactions([]);
         }
       } catch (error) {
         console.error('❌ Failed to fetch live USDC data:', error);
