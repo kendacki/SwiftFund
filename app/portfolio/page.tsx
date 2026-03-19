@@ -624,7 +624,7 @@ export default function PortfolioPage() {
 
       // 2. CRITICAL: Force the Embedded Wallet to be on Sepolia (Chain ID 11155111 / 0xaa36a7)
       const network = await browserProvider.getNetwork();
-      if (network.chainId !== 11155111n) {
+      if (Number(network.chainId) !== 11155111) {
         console.log(
           '🔄 SWAP DEBUG: Wallet is on wrong network. Switching to Sepolia...'
         );
