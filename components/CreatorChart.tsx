@@ -143,7 +143,7 @@ export default function CreatorChart() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-white">Live Hedera Network</h2>
+            <h2 className="text-xl font-bold text-white">Hedera Network</h2>
             <div className="flex items-center gap-1 bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-xs font-medium border border-green-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
               Mainnet Synced
