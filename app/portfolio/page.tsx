@@ -612,44 +612,46 @@ export default function PortfolioPage() {
         throw new Error('Swap currently supports USDC → HBAR only.');
       }
 
-      // 1. Unify external + embedded wallets via Privy
-      const provider = await activeWallet.getEthereumProvider();
-      const ethersProvider = new ethers.BrowserProvider(provider);
-      const signer = await ethersProvider.getSigner();
-
-      // 2. Setup real USDC ERC-20 transfer interaction
-      const usdcAbi = ['function transfer(address to, uint256 amount) returns (bool)'];
-      // Use official Sepolia USDC and a valid 42-character hex fallback so ethers doesn't trigger ENS lookups
-      const usdcAddress =
-        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
-        '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
-
-      // Ensure the treasury fallback is a valid 42-character EVM address
-      const treasuryAddress =
-        process.env.NEXT_PUBLIC_EVM_TREASURY ||
-        '0x000000000000000000000000000000000000dEaD';
-
-      const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
-
       // 1. Sanitize the input to prevent parsing errors
       const safeAmount = swapAmount.toString().trim();
       if (!safeAmount || isNaN(Number(safeAmount)) || Number(safeAmount) <= 0) {
         throw new Error('Please enter a valid swap amount.');
       }
 
-      // USDC uses 6 decimals
+      // 1. Get the actual user's wallet provider (NOT the read-only public node)
+      const ethereumProvider = await activeWallet.getEthereumProvider();
+      const browserProvider = new ethers.BrowserProvider(ethereumProvider);
+      const signer = await browserProvider.getSigner();
+
+      // 2. Setup the contract WITH the Signer so the wallet knows exactly what to do
+      const usdcAddress =
+        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
+        '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+      const usdcAbi = [
+        'function transfer(address to, uint256 value) public returns (bool)',
+      ];
+      const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, signer);
+
+      const treasuryAddress =
+        process.env.NEXT_PUBLIC_EVM_TREASURY ||
+        '0x000000000000000000000000000000000000dEaD';
       const amountInUnits = ethers.parseUnits(safeAmount, 6);
 
-      toast.loading('Initiating USDC transfer...');
-      // 2. Execute with an explicit gas limit override
-      // A standard ERC-20 transfer costs ~65,000 gas. We provide 100,000 as a safe buffer.
-      // This forces the wallet to skip the slow estimation phase and load instantly.
+      console.log('⏳ SWAP DEBUG: Requesting wallet signature...');
+
+      // 3. Send the transaction with the gas limit buffer
       const tx = await usdcContract.transfer(treasuryAddress, amountInUnits, {
         gasLimit: 100000,
       });
 
-      toast.loading('Waiting for EVM block confirmation...');
-      await tx.wait();
+      console.log(
+        '🟢 SWAP DEBUG: Transaction sent to mempool! Hash:',
+        tx.hash
+      );
+
+      // 4. CRITICAL: wait for Sepolia to mine the block
+      const receipt = await tx.wait();
+      console.log('✅ SWAP DEBUG: Block mined successfully!', receipt);
 
       toast.loading('Verifying with Cross-Chain Oracle...');
       const response = await fetch('/api/oracle', {
