@@ -25,13 +25,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    // 1) ORACLE VERIFICATION (EVM SIDE)
-    const rpcUrl = process.env.EVM_RPC_URL?.trim();
-    if (!rpcUrl) {
-      return NextResponse.json({ error: 'EVM_RPC_URL is not set' }, { status: 500 });
-    }
+    // 1. ORACLE VERIFICATION (EVM SIDE)
+    // Hardcoding the Sepolia public node to guarantee we are searching the correct blockchain
+    const provider = new ethers.JsonRpcProvider(
+      'https://ethereum-sepolia-rpc.publicnode.com'
+    );
 
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    console.log('🔍 ORACLE DEBUG: Pinging Sepolia for TxHash:', evmTxHash);
 
     // Fetch both the receipt (for status) and the tx data (for the 'to' address)
     const [receipt, tx] = await Promise.all([
@@ -39,23 +39,40 @@ export async function POST(req: Request) {
       provider.getTransaction(evmTxHash),
     ]);
 
-    if (!receipt || receipt.status !== 1) {
+    if (!receipt) {
+      console.log(
+        '❌ ORACLE DEBUG: Receipt is completely null. RPC cannot find this hash.'
+      );
       return NextResponse.json(
-        { error: 'EVM Transaction failed or not found' },
+        { error: 'EVM Transaction not found on Sepolia network.' },
         { status: 400 }
       );
     }
 
-    // Verify the transaction was sent to our official USDC contract
-    const officialUsdcAddress = process.env.TESTNET_USDC_ADDRESS?.trim();
-    if (!officialUsdcAddress) {
+    if (receipt.status !== 1) {
+      console.log(
+        '❌ ORACLE DEBUG: Transaction found, but it REVERTED (Failed) on-chain.'
+      );
       return NextResponse.json(
-        { error: 'TESTNET_USDC_ADDRESS is not set' },
-        { status: 500 }
+        { error: 'EVM Transaction reverted/failed on-chain.' },
+        { status: 400 }
       );
     }
 
-    if (!tx || tx.to?.toLowerCase() !== officialUsdcAddress.toLowerCase()) {
+    console.log('✅ ORACLE DEBUG: EVM Transaction Verified successfully!');
+
+    // Verify the transaction was sent to our official USDC contract
+    const officialUsdcAddress = (
+      process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
+      '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238'
+    ).toLowerCase();
+    if (!tx || tx.to?.toLowerCase() !== officialUsdcAddress) {
+      console.log(
+        '❌ ORACLE DEBUG: Contract mismatch. Expected:',
+        officialUsdcAddress,
+        'Got:',
+        tx?.to
+      );
       return NextResponse.json(
         { error: 'Invalid contract interaction. Not official USDC.' },
         { status: 400 }
