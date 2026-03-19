@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
 import Link from 'next/link';
@@ -85,6 +85,7 @@ export default function PortfolioPage() {
   const [hbarUsdPrice, setHbarUsdPrice] = useState<number>(0);
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
   const [usdcTransactions, setUsdcTransactions] = useState<any[]>([]);
+  const prevUsdcAddressRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Claim yield (funder pull)
@@ -183,8 +184,13 @@ export default function PortfolioPage() {
   useEffect(() => {
     if (!address) return;
 
-    // Reset when switching accounts, but do not clear on temporary indexing/API gaps.
-    setUsdcTransactions([]);
+    // Only clear when the connected wallet address actually changes.
+    // This prevents temporarily wiping USDC rows when the wallet provider/network
+    // re-initializes during swap/deposit flows.
+    if (prevUsdcAddressRef.current !== address) {
+      prevUsdcAddressRef.current = address;
+      setUsdcTransactions([]);
+    }
 
     const fetchLiveUsdc = async () => {
       try {
