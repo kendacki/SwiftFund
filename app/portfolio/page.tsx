@@ -84,6 +84,7 @@ export default function PortfolioPage() {
   const [usdcAmount, setUsdcAmount] = useState<number>(0);
   const [hbarUsdPrice, setHbarUsdPrice] = useState<number>(0);
   const [transactions, setTransactions] = useState<DashboardTx[]>([]);
+  const [usdcTransactions, setUsdcTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Claim yield (funder pull)
@@ -199,67 +200,35 @@ export default function PortfolioPage() {
         setUsdcAmount(formattedBalance);
 
         // 2) Fetch real USDC transfer history from Sepolia Etherscan
-        const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY?.trim();
-        const etherscanUrl =
-          `https://api-sepolia.etherscan.io/api?module=account&action=tokentx` +
-          `&contractaddress=${usdcAddress}` +
-          `&address=${activeWallet.address}` +
-          `&page=1&offset=50&sort=desc` +
-          (apiKey ? `&apikey=${apiKey}` : '');
+        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWallet.address}&page=1&offset=50&sort=desc`;
 
         const historyRes = await fetch(etherscanUrl);
         const historyData = await historyRes.json();
 
-        if (historyData?.status === '1' && Array.isArray(historyData?.result)) {
+        console.log('🔍 DEBUG: Etherscan API Response:', historyData);
+
+        if (historyData?.status === '1' && Array.isArray(historyData?.result) && historyData.result.length > 0) {
           const addrLower = activeWallet.address.toLowerCase();
 
-          const realUsdcTransactions: DashboardTx[] = historyData.result.map(
-            (tx: any) => {
-              const isReceive =
-                typeof tx?.to === 'string' &&
-                tx.to.toLowerCase() === addrLower;
+          const realUsdcTransactions = historyData.result.map((tx: any) => ({
+            id: tx.hash,
+            type:
+              tx.to.toLowerCase() === addrLower
+                ? 'Receive'
+                : 'Send',
+            asset: 'USDC',
+            amount: parseFloat(ethers.formatUnits(tx.value, 6)),
+            date: new Date(parseInt(tx.timeStamp) * 1000).toLocaleString(),
+            icon: '/usdc.png',
+            status: 'Completed',
+            from: tx.from,
+            to: tx.to,
+          }));
 
-              const amountNum = parseFloat(ethers.formatUnits(tx?.value ?? '0', 6));
-              const sign = isReceive ? '+' : '-';
-              const amountLabel = `${sign}${amountNum.toLocaleString(undefined, {
-                maximumFractionDigits: 6,
-              })} USDC`;
-
-              const ts = Number(tx?.timeStamp);
-              const time = Number.isFinite(ts)
-                ? new Date(ts * 1000).toLocaleString()
-                : '—';
-
-              const hashStr = String(tx?.hash ?? '');
-              const shortHash =
-                hashStr.length >= 14
-                  ? `${hashStr.slice(0, 8)}…${hashStr.slice(-6)}`
-                  : hashStr || '—';
-
-              return {
-                id: hashStr || `${Date.now()}-${Math.random()}`,
-                hash: shortHash,
-                amount: amountLabel,
-                tokenType: 'USDC',
-                time,
-                from: typeof tx?.from === 'string' ? tx.from : undefined,
-                to: typeof tx?.to === 'string' ? tx.to : undefined,
-              };
-            }
-          );
-
-          // 3) Safely merge with existing Hedera/SWIND txs without overwriting
-          setTransactions((prev) => {
-            const nonUsdcTxs = prev.filter((t) => t.tokenType !== 'USDC');
-            const combined = [...realUsdcTransactions, ...nonUsdcTxs].sort(
-              (a, b) => {
-                const bt = Date.parse(b.time);
-                const at = Date.parse(a.time);
-                return (Number.isNaN(bt) ? 0 : bt) - (Number.isNaN(at) ? 0 : at);
-              }
-            );
-            return combined;
-          });
+          // Set to our isolated state instead of the shared state
+          setUsdcTransactions(realUsdcTransactions);
+        } else {
+          console.log('⚠️ DEBUG: Etherscan returned no transactions or an error.');
         }
       } catch (error) {
         console.error('❌ Failed to fetch live USDC data:', error);
@@ -311,7 +280,7 @@ export default function PortfolioPage() {
           if (!cancelled) {
             setHbarBalance(0);
             setSwindBalance(0);
-            setTransactions((prev) => prev.filter((t) => t.tokenType === 'USDC'));
+            setTransactions([]);
           }
           return;
         }
@@ -322,7 +291,7 @@ export default function PortfolioPage() {
           if (!cancelled) {
             setHbarBalance(0);
             setSwindBalance(0);
-            setTransactions((prev) => prev.filter((t) => t.tokenType === 'USDC'));
+            setTransactions([]);
           }
           return;
         }
@@ -431,15 +400,12 @@ export default function PortfolioPage() {
           });
 
           if (!cancelled) {
-            setTransactions((prev) => {
-              const usdcTxs = prev.filter((t) => t.tokenType === 'USDC');
-              return [...usdcTxs, ...mapped];
-            });
+            setTransactions(mapped);
           }
         }
       } catch {
         if (!cancelled) {
-          setTransactions((prev) => prev.filter((t) => t.tokenType === 'USDC'));
+          setTransactions([]);
         }
       } finally {
         if (!cancelled) {
@@ -1114,7 +1080,13 @@ export default function PortfolioPage() {
                         </td>
                       </tr>
                     ) : (
-                      transactions.map((tx) => (
+                      [...transactions, ...usdcTransactions]
+                        .sort(
+                          (a: any, b: any) =>
+                            new Date(b.date ?? b.time).getTime() -
+                            new Date(a.date ?? a.time).getTime()
+                        )
+                        .map((tx: any) => (
                         <tr
                           key={tx.id}
                           className="border-b border-neutral-800/80 last:border-0 transition-all duration-200 hover:bg-neutral-900 hover:scale-[1.01]"
@@ -1129,8 +1101,8 @@ export default function PortfolioPage() {
                             )}
                           </td>
                           <td className="px-4 sm:px-6 py-3 font-heading text-white">{tx.amount}</td>
-                          <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType}</td>
-                          <td className="px-4 sm:px-6 py-3 text-neutral-500">{tx.time}</td>
+                          <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType ?? tx.asset}</td>
+                          <td className="px-4 sm:px-6 py-3 text-neutral-500">{tx.time ?? tx.date}</td>
                         </tr>
                       ))
                     )}
