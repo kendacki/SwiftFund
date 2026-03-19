@@ -1321,11 +1321,27 @@ export default function PortfolioPage() {
                           const hbarToSend = usdAmount / hbarPrice;
                           // Hedera HBAR uses 8 decimals. Clamp to avoid parseUnits underflow/precision issues.
                           const hbarToSendStr = hbarToSend.toFixed(8);
+                          const sentHbar = Number(hbarToSendStr);
                           const value = ethers.parseUnits(hbarToSendStr, 8);
                           toast.loading('Sending HBAR...');
                           const tx = await signer.sendTransaction({ to: recipientEvm, value });
                           await tx.wait();
                           toast.success('HBAR sent successfully.');
+                          // Optimistically update balances + tx list (mirror polling will also reconcile)
+                          setHbarBalance((prev) => Math.max(0, prev - sentHbar));
+                          setTransactions((prev) => [
+                            {
+                              id: `${Date.now()}-hb-send`,
+                              hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
+                              amount: `${sentHbar.toLocaleString(undefined, {
+                                maximumFractionDigits: 4,
+                              })} HBAR`,
+                              tokenType: 'HBAR',
+                              time: new Date().toLocaleString(),
+                              date: new Date().toISOString(),
+                            } as any,
+                            ...prev,
+                          ]);
                         } else {
                           // SWIND uses 2 decimals on Hedera.
                           if (!swindPrice || swindPrice <= 0) {
@@ -1334,6 +1350,7 @@ export default function PortfolioPage() {
                           const swindToSend = usdAmount / swindPrice;
                           // SWIND uses 2 decimals. Clamp to avoid parseUnits underflow/precision issues.
                           const swindToSendStr = swindToSend.toFixed(2);
+                          const sentSwind = Number(swindToSendStr);
                           const amountInt = ethers.parseUnits(swindToSendStr, 2); // smallest units
 
                           // int64 range check (Hedera HTS precompile expects int64)
@@ -1362,6 +1379,21 @@ export default function PortfolioPage() {
                           );
                           await tx.wait();
                           toast.success('SWIND sent successfully.');
+                          // Optimistically update balances + tx list (mirror polling will also reconcile)
+                          setSwindBalance((prev) => Math.max(0, prev - sentSwind));
+                          setTransactions((prev) => [
+                            {
+                              id: `${Date.now()}-swind-send`,
+                              hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
+                              amount: `${sentSwind.toLocaleString(undefined, {
+                                maximumFractionDigits: 4,
+                              })} SWIND`,
+                              tokenType: 'SWIND',
+                              time: new Date().toLocaleString(),
+                              date: new Date().toISOString(),
+                            } as any,
+                            ...prev,
+                          ]);
                         }
 
                         setIsSendModalOpen(false);
