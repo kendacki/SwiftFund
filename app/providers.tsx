@@ -28,6 +28,15 @@ export default function Providers({ children, appId }: ProvidersProps) {
     <PrivyProvider
       appId={appId}
       config={{
+        // Sith Mode: dark Privy modals (confirm tx, login) + red accent
+        appearance: {
+          theme: 'dark',
+          accentColor: '#DC2626', // Tailwind red-600
+          ...(process.env.NEXT_PUBLIC_PRIVY_LOGO_URL
+            ? { logo: process.env.NEXT_PUBLIC_PRIVY_LOGO_URL }
+            : {}),
+        },
+
         // 1. Tell the UI to show both Email/Social AND external Wallets (MetaMask)
         loginMethods: ['email', 'wallet', 'google', 'apple'],
 

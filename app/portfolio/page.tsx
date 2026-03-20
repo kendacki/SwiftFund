@@ -34,6 +34,8 @@ interface DashboardTx {
   amount: string;
   tokenType: TokenSymbol | string;
   time: string;
+  /** ISO string for sorting / filtering with USDC + Hedera rows */
+  date?: string;
   from?: string;
   to?: string;
 }
@@ -734,7 +736,11 @@ export default function PortfolioPage() {
           maximumFractionDigits: 6,
         });
 
-        // Insert into isolated USDC state so Hedera polling doesn't overwrite it.
+        // HBAR received (USDC → HBAR): use live CoinCap price, not raw USDC input
+        const receivedHbar =
+          hbarPrice > 0 ? amountNum / hbarPrice : amountNum * 10;
+
+        // 1) USDC out on EVM — keep in isolated USDC history
         setUsdcTransactions((prev: any[]) => {
           const newTx = {
             id: tx.hash,
@@ -755,6 +761,25 @@ export default function PortfolioPage() {
           return [newTx, ...withoutDupe];
         });
 
+        // 2) HBAR receive on Hedera side — show calculated HBAR, not safeAmount
+        const evmHash = receipt?.hash ?? tx.hash;
+        const shortHash =
+          typeof evmHash === 'string' && evmHash.length > 16
+            ? `${evmHash.slice(0, 10)}…${evmHash.slice(-6)}`
+            : String(evmHash);
+
+        const newSwapHbarTx: DashboardTx = {
+          id: `swap-hbar-${evmHash}`,
+          hash: shortHash,
+          amount: `+${receivedHbar.toFixed(2)} HBAR`,
+          tokenType: 'HBAR',
+          time: new Date().toLocaleString(),
+          date: new Date().toISOString(),
+        };
+
+        setTransactions((prev) => [newSwapHbarTx, ...(prev || [])]);
+        setHbarBalance((prev) => prev + receivedHbar);
+
         toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
         setIsSwapModalOpen(false);
       } else {
@@ -772,18 +797,34 @@ export default function PortfolioPage() {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`
     : '';
 
-  const combinedTransactions = [...(transactions || []), ...(usdcTransactions || [])]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // 1. Ensure both arrays exist (fallback to empty arrays if undefined)
+  const safeHederaTxs = transactions || [];
+  const safeUsdcTxs = usdcTransactions || [];
+
+  const txSortTimeMs = (tx: any): number => {
+    const raw = tx?.date ?? tx?.time;
+    if (raw == null || raw === '') return 0;
+    const ms = new Date(raw).getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  };
+
+  // 2. Combine and sort strictly by date (newest first); USDC + Hedera both use date ?? time
+  const combinedTransactions = [...safeHederaTxs, ...safeUsdcTxs].sort((a, b) => {
+    return txSortTimeMs(b) - txSortTimeMs(a);
+  });
 
   const activeFilter = txFilter; // 'recent' | 'day' | 'month' | 'all'
 
+  // 3. Time-based filter (Recent / Day / Month / All) — always include rows with missing/invalid dates so USDC rows still render
   const displayedTransactions = combinedTransactions.filter((tx: any) => {
-    const txTime = new Date((tx as any).date ?? tx.time).getTime();
+    const txTime = txSortTimeMs(tx);
     const now = Date.now();
 
     const hours12 = 12 * 60 * 60 * 1000;
     const hours24 = 24 * 60 * 60 * 1000;
     const days30 = 30 * 24 * 60 * 60 * 1000;
+
+    if (txTime === 0) return true;
 
     if (activeFilter === 'recent') return now - txTime <= hours12;
     if (activeFilter === 'day') return now - txTime <= hours24;
