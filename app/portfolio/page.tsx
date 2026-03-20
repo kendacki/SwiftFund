@@ -34,6 +34,7 @@ interface DashboardTx {
   amount: string;
   tokenType: TokenSymbol | string;
   time: string;
+  type?: 'Send' | 'Receive' | 'Swap' | string;
   /** ISO string for sorting / filtering with USDC + Hedera rows */
   date?: string;
   from?: string;
@@ -416,6 +417,7 @@ export default function PortfolioPage() {
             // Default type
             let tokenType: TokenSymbol | string = 'HBAR';
             let amountLabel = '—';
+            let txType: 'Send' | 'Receive' | 'Swap' | string = 'Receive';
 
             // Prefer token transfers for SWIND, otherwise HBAR transfers.
             const tokenTransfers: any[] = tx.token_transfers ?? [];
@@ -425,11 +427,12 @@ export default function PortfolioPage() {
 
             if (swindTransfer) {
               const raw = Number(swindTransfer.amount ?? 0);
-              const sign = raw > 0 ? '+' : '';
+              const isReceive = raw > 0;
               // SWIND uses 2 decimals in Mirror Node history as well.
               const amt = Math.abs(raw) / 100;
               tokenType = 'SWIND';
-              amountLabel = `${sign}${amt.toLocaleString(undefined, {
+              txType = isReceive ? 'Receive' : 'Send';
+              amountLabel = `${amt.toLocaleString(undefined, {
                 maximumFractionDigits: 4,
               })} SWIND`;
             } else if (Array.isArray(tx.transfers)) {
@@ -438,10 +441,11 @@ export default function PortfolioPage() {
               );
               if (ownTransfer) {
                 const raw = Number(ownTransfer.amount ?? 0);
-                const sign = raw > 0 ? '+' : '';
+                const isReceive = raw > 0;
                 const amt = Math.abs(raw) / 1e8;
                 tokenType = 'HBAR';
-                amountLabel = `${sign}${amt.toLocaleString(undefined, {
+                txType = isReceive ? 'Receive' : 'Send';
+                amountLabel = `${amt.toLocaleString(undefined, {
                   maximumFractionDigits: 4,
                 })} HBAR`;
               }
@@ -462,6 +466,7 @@ export default function PortfolioPage() {
               hash: shortHash,
               amount: amountLabel,
               tokenType,
+              type: txType,
               time,
               date,
             };
@@ -820,8 +825,9 @@ export default function PortfolioPage() {
         const newSwapHbarTx: DashboardTx = {
           id: `swap-hbar-${evmHash}`,
           hash: shortHash,
-          amount: `+${receivedHbarStr} HBAR`,
+          amount: `${receivedHbarStr} HBAR`,
           tokenType: 'HBAR',
+          type: 'Swap',
           time: new Date().toLocaleString(),
           date: new Date().toISOString(),
         };
@@ -1305,7 +1311,21 @@ export default function PortfolioPage() {
                               tx.hash
                             )}
                           </td>
-                          <td className="px-4 sm:px-6 py-3 font-heading text-white">{tx.amount}</td>
+                          <td className="px-4 sm:px-6 py-3 font-heading text-white">
+                            {(() => {
+                              const rawAmount = String(tx.amount ?? '');
+                              const normalizedAmount = rawAmount.replace(/^[+-]\s*/, '');
+                              const isSend = tx.type === 'Send';
+                              return (
+                                <span
+                                  className={`font-bold ${isSend ? 'text-red-500' : 'text-white'}`}
+                                >
+                                  {isSend ? '-' : '+'}
+                                  {normalizedAmount}
+                                </span>
+                              );
+                            })()}
+                          </td>
                           <td className="px-4 sm:px-6 py-3 text-neutral-400">{tx.tokenType ?? tx.asset}</td>
                           <td className="px-4 sm:px-6 py-3 text-neutral-500">{tx.time ?? tx.date}</td>
                         </tr>
@@ -1435,9 +1455,11 @@ export default function PortfolioPage() {
                         const recipientEvm = isEvmAddress
                           ? to
                           : (() => {
-                              const solidity = AccountId.fromString(to).toSolidityAddress();
+                              const solidity =
+                                AccountId.fromString(to).toSolidityAddress();
                               return `0x${solidity}`;
                             })();
+                        const recipientAddress = recipientEvm;
 
                         const ethereumProvider = await activeWallet.getEthereumProvider();
                         const browserProvider = new ethers.BrowserProvider(ethereumProvider);
@@ -1456,7 +1478,16 @@ export default function PortfolioPage() {
                           const sentHbar = Number(hbarToSendStr);
                           const value = ethers.parseUnits(hbarToSendStr, 8);
                           toast.loading('Sending HBAR...');
-                          const tx = await signer.sendTransaction({ to: recipientEvm, value });
+                          console.log(
+                            '🟣 SEND DEBUG: destinationAddress (HBAR)',
+                            recipientAddress,
+                            'senderAddress:',
+                            senderEvm
+                          );
+                          const tx = await signer.sendTransaction({
+                            to: recipientAddress,
+                            value,
+                          });
                           await tx.wait();
                           toast.success('HBAR sent successfully.');
                           // Optimistically update balances + tx list (mirror polling will also reconcile)
@@ -1469,6 +1500,9 @@ export default function PortfolioPage() {
                                 maximumFractionDigits: 4,
                               })} HBAR`,
                               tokenType: 'HBAR',
+                              type: 'Send',
+                              from: senderEvm,
+                              to: recipientAddress,
                               time: new Date().toLocaleString(),
                               date: new Date().toISOString(),
                             } as any,
@@ -1506,7 +1540,7 @@ export default function PortfolioPage() {
                           const tx = await hts.transferToken(
                             SWIND_EVM_ADDRESS,
                             senderEvm,
-                            recipientEvm,
+                            recipientAddress,
                             amountInt
                           );
                           await tx.wait();
@@ -1521,6 +1555,9 @@ export default function PortfolioPage() {
                                 maximumFractionDigits: 4,
                               })} SWIND`,
                               tokenType: 'SWIND',
+                              type: 'Send',
+                              from: senderEvm,
+                              to: recipientAddress,
                               time: new Date().toLocaleString(),
                               date: new Date().toISOString(),
                             } as any,
