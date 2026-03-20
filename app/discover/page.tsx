@@ -99,7 +99,10 @@ interface DiscoverProject extends ProjectCardData {
 export default function DiscoverPage() {
   const { authenticated } = usePrivy();
   const { wallets } = useWallets();
-  const hasConnectedWallet = wallets.length > 0;
+  // Privy can return wallet objects even when not connected.
+  // The real "connected" signal in this app is presence of a wallet EVM address.
+  const hasConnectedWallet = Boolean(wallets[0]?.address);
+  const isLoggedInPhase = authenticated && hasConnectedWallet;
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [apiProjects, setApiProjects] = useState<DiscoverProject[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -184,12 +187,12 @@ export default function DiscoverPage() {
 
     // Logged-out experience: preserve the previous “funding cards” UI by
     // showing mocks even when no approved campaigns exist yet.
-    if (!authenticated || !hasConnectedWallet) return mockWithTags;
+    if (!isLoggedInPhase) return mockWithTags;
 
     // Logged-in experience: production stays empty until admin approves campaigns.
     if (process.env.NODE_ENV === 'development') return mockWithTags;
     return [];
-  }, [apiProjects, authenticated, hasConnectedWallet]);
+  }, [apiProjects, isLoggedInPhase]);
 
   const filteredProjects = useMemo(() => {
     if (activeFilter === 'all') return allProjects;
@@ -424,7 +427,7 @@ export default function DiscoverPage() {
         ) : (
           <>
             {filteredProjects.length === 0 ? (
-              authenticated ? (
+              isLoggedInPhase ? (
                 <div className="text-sm text-neutral-500 py-10 text-center">
                   No approved projects yet. Check back soon.
                 </div>
