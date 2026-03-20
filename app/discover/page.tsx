@@ -415,9 +415,15 @@ export default function DiscoverPage() {
         ) : (
           <>
             {filteredProjects.length === 0 ? (
-              <div className="text-sm text-neutral-500 py-10 text-center">
-                No approved projects yet. Check back soon.
-              </div>
+              authenticated ? (
+                <div className="text-sm text-neutral-500 py-10 text-center">
+                  No approved projects yet. Check back soon.
+                </div>
+              ) : (
+                // Logged-out: preserve the previous container structure (grid wrapper),
+                // even if it renders zero cards.
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5" />
+              )
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {filteredProjects.map((project, index) => (
