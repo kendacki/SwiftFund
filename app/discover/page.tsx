@@ -173,14 +173,22 @@ export default function DiscoverPage() {
 
   const allProjects = useMemo(() => {
     const fromApi = apiProjects;
-    const mockWithTags = MOCK_PROJECTS.map((p) => ({ ...p, tags: ['all'] as FilterKey[] }));
+    const mockWithTags = MOCK_PROJECTS.map((p) => ({
+      ...p,
+      tags: ['all'] as FilterKey[],
+    }));
+
+    // If we have approved campaigns from the API, always show those.
     if (fromApi.length > 0) return fromApi;
 
-    // Only render mocks in development; in production show empty state
-    // until admin has approved campaigns.
+    // Logged-out experience: preserve the previous “funding cards” UI by
+    // showing mocks even when no approved campaigns exist yet.
+    if (!authenticated) return mockWithTags;
+
+    // Logged-in experience: production stays empty until admin approves campaigns.
     if (process.env.NODE_ENV === 'development') return mockWithTags;
     return [];
-  }, [apiProjects]);
+  }, [apiProjects, authenticated]);
 
   const filteredProjects = useMemo(() => {
     if (activeFilter === 'all') return allProjects;
