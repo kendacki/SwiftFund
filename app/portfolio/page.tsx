@@ -1488,13 +1488,16 @@ export default function PortfolioPage() {
                             to: recipientAddress,
                             value,
                           });
-                          await tx.wait();
+                          const receipt = await tx.wait(1);
+                          if (receipt?.status !== 1) {
+                            throw new Error('HBAR transfer failed on-chain.');
+                          }
                           toast.success('HBAR sent successfully.');
                           // Optimistically update balances + tx list (mirror polling will also reconcile)
                           setHbarBalance((prev) => Math.max(0, prev - sentHbar));
                           setTransactions((prev) => [
                             {
-                              id: `${Date.now()}-hb-send`,
+                              id: receipt?.hash ?? `${Date.now()}-hb-send`,
                               hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
                               amount: `${sentHbar.toLocaleString(undefined, {
                                 maximumFractionDigits: 4,
@@ -1537,19 +1540,36 @@ export default function PortfolioPage() {
                           );
 
                           toast.loading('Sending SWIND...');
+                          // Preflight check via staticCall: Hedera HTS success is responseCode 22.
+                          // This prevents UI updates when the precompile returns a failure code.
+                          const responseCode: bigint = await hts.transferToken.staticCall(
+                            SWIND_EVM_ADDRESS,
+                            senderEvm,
+                            recipientAddress,
+                            amountInt
+                          );
+                          if (responseCode !== 22n) {
+                            throw new Error(
+                              `SWIND transfer failed (responseCode=${responseCode.toString()}).`
+                            );
+                          }
+
                           const tx = await hts.transferToken(
                             SWIND_EVM_ADDRESS,
                             senderEvm,
                             recipientAddress,
                             amountInt
                           );
-                          await tx.wait();
+                          const receipt = await tx.wait(1);
+                          if (receipt?.status !== 1) {
+                            throw new Error('SWIND transfer failed on-chain.');
+                          }
                           toast.success('SWIND sent successfully.');
                           // Optimistically update balances + tx list (mirror polling will also reconcile)
                           setSwindBalance((prev) => Math.max(0, prev - sentSwind));
                           setTransactions((prev) => [
                             {
-                              id: `${Date.now()}-swind-send`,
+                              id: receipt?.hash ?? `${Date.now()}-swind-send`,
                               hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
                               amount: `${sentSwind.toLocaleString(undefined, {
                                 maximumFractionDigits: 4,
