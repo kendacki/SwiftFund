@@ -92,8 +92,13 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
-      console.error('🚨 SUPABASE AVATAR UPLOAD ERROR:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload avatar to Supabase.' }, { status: 500 });
+      console.error('🚨 SUPABASE AVATAR UPLOAD FAILED.');
+      console.error('Error Message:', uploadError?.message);
+      console.error('Error Name:', (uploadError as any)?.name);
+      console.error(
+        "Target Bucket: 'avatars' (Verify this exists in Supabase)"
+      );
+      throw new Error(`Avatar upload failed: ${uploadError?.message}`);
     }
 
     const { data: publicUrlData } = supabase.storage
