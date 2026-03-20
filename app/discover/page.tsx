@@ -99,6 +99,7 @@ interface DiscoverProject extends ProjectCardData {
 export default function DiscoverPage() {
   const { authenticated } = usePrivy();
   const { wallets } = useWallets();
+  const hasConnectedWallet = wallets.length > 0;
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [apiProjects, setApiProjects] = useState<DiscoverProject[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -183,12 +184,12 @@ export default function DiscoverPage() {
 
     // Logged-out experience: preserve the previous “funding cards” UI by
     // showing mocks even when no approved campaigns exist yet.
-    if (!authenticated) return mockWithTags;
+    if (!authenticated || !hasConnectedWallet) return mockWithTags;
 
     // Logged-in experience: production stays empty until admin approves campaigns.
     if (process.env.NODE_ENV === 'development') return mockWithTags;
     return [];
-  }, [apiProjects, authenticated]);
+  }, [apiProjects, authenticated, hasConnectedWallet]);
 
   const filteredProjects = useMemo(() => {
     if (activeFilter === 'all') return allProjects;
