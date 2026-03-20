@@ -107,16 +107,22 @@ contract SwiftFundTreasury {
     function claimYield(address creator) external nonReentrant {
         if (creator == address(0)) revert ZeroAddress();
 
-        uint256 amount = claimableByCreatorByFunder[creator][msg.sender];
+        // Cache `msg.sender` so we always use the same address for both effects and interaction.
+        // Effects are applied before the external call (CEI), and `nonReentrant` further blocks re-entry.
+        address payable claimant = payable(msg.sender);
+
+        uint256 amount = claimableByCreatorByFunder[creator][claimant];
         if (amount == 0) revert NothingToClaim();
         if (address(this).balance < amount) revert InsufficientBalance();
 
-        claimableByCreatorByFunder[creator][msg.sender] = 0;
+        // Effects: clear claimable balance before interacting with `claimant`.
+        claimableByCreatorByFunder[creator][claimant] = 0;
 
-        (bool ok, ) = msg.sender.call{ value: amount }("");
+        // Interaction: external transfer.
+        (bool ok, ) = claimant.call{ value: amount }("");
         if (!ok) revert TransferFailed();
 
-        emit YieldClaimed(msg.sender, creator, amount);
+        emit YieldClaimed(claimant, creator, amount);
     }
 
     /// @notice Owner credits claimable yield for funders (e.g. after calculating allocations off-chain).
