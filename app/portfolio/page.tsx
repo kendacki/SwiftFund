@@ -195,76 +195,76 @@ export default function PortfolioPage() {
     }
 
     const fetchLiveUsdc = async () => {
+      const activeWallet = wallets[0];
+      if (!activeWallet?.address) return;
+      console.log('🔄 SYNC DEBUG: Fetching live USDC data for', activeWallet.address);
+
+      const usdcAddress =
+        process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
+        '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+
+      // 1) ISOLATED BALANCE FETCH
       try {
-        // 1. Fetch Balance (Confirmed Working)
         const provider = new ethers.JsonRpcProvider(
           'https://ethereum-sepolia-rpc.publicnode.com'
         );
-        const usdcAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
         const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
-        const balance = await usdcContract.balanceOf(address);
+        const balance = await usdcContract.balanceOf(activeWallet.address);
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
+
         setUsdcAmount(formattedBalance);
+        console.log('💰 SYNC DEBUG: USDC Balance updated ->', formattedBalance);
+      } catch (error) {
+        console.error('❌ SYNC DEBUG: Balance Fetch Failed:', error);
+      }
 
-        // 2. Fetch Real Transaction History (Unlocked with API Key)
+      // 2) ISOLATED HISTORY FETCH
+      try {
         const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
-        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${address}&page=1&offset=50&sort=desc&apikey=${apiKey}`;
+        if (!apiKey) throw new Error('Missing Etherscan API Key');
 
-        const historyRes = await fetch(etherscanUrl);
-        const historyData = await historyRes.json();
+        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWallet.address}&page=1&offset=20&sort=desc&apikey=${apiKey}`;
 
-        // 3. Process and Isolate the Data
-        if (historyData.status === '1') {
+        const res = await fetch(etherscanUrl);
+        const data = await res.json();
+
+        if (data.status === '1' && data.result) {
+          const realUsdcTx = data.result.map((tx: any) => {
+            const isReceive =
+              tx.to?.toLowerCase?.() === activeWallet.address.toLowerCase();
+            const amountNum = parseFloat(ethers.formatUnits(tx.value, 6));
+            const sign = isReceive ? '+' : '-';
+            return {
+              id: tx.hash,
+              hash: tx.hash,
+              type: isReceive ? 'Receive' : 'Send',
+              asset: 'USDC',
+              tokenType: 'USDC',
+              amount: `${sign}${amountNum.toFixed(2)} USDC`,
+              date: new Date(parseInt(tx.timeStamp, 10) * 1000).toISOString(),
+              time: new Date(parseInt(tx.timeStamp, 10) * 1000).toLocaleString(),
+              status: 'Completed',
+              icon: '/usdc.png',
+              from: tx.from,
+              to: tx.to,
+            };
+          });
+          setUsdcTransactions(realUsdcTx);
           console.log(
-            '🟢 DEBUG: Etherscan Success! Found',
-            historyData.result?.length ?? 0,
-            'transactions.'
+            '📜 SYNC DEBUG: USDC History updated ->',
+            realUsdcTx.length,
+            'records'
           );
-
-          if ((historyData.result?.length ?? 0) > 0) {
-            const realUsdcTransactions = historyData.result.map((tx: any) => {
-              const isReceive =
-                tx.to?.toLowerCase?.() === address.toLowerCase();
-
-              const amountNum = parseFloat(
-                ethers.formatUnits(tx.value, 6)
-              );
-              const sign = isReceive ? '+' : '-';
-
-              return {
-                id: tx.hash,
-                type: isReceive ? 'Receive' : 'Send',
-                asset: 'USDC',
-                tokenType: 'USDC',
-                amount: `${sign}${amountNum.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })} USDC`,
-                // `date` is used for sorting/filtering (ISO string parses reliably)
-                date: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-                // `time` is used for display
-                time: new Date(parseInt(tx.timeStamp) * 1000).toLocaleString(),
-                icon: '/usdc.png',
-                status: 'Completed',
-                from: tx.from,
-                to: tx.to,
-                hash: tx.hash,
-              };
-            });
-
-            // Safely store in isolated state
-            setUsdcTransactions(realUsdcTransactions);
-          } else {
-            // Keep existing history until the indexer catches up (avoids the swap/deposit disappearing right after action).
-            console.log('⚠️ DEBUG: Etherscan returned 0 USDC txs; keeping existing history.');
-          }
         } else {
-          console.log('⚠️ DEBUG: Etherscan Status:', historyData.message);
-          // Keep existing history if the API is temporarily failing / not indexed yet.
+          console.log(
+            '⚠️ SYNC DEBUG: Etherscan returned no history or rate limited:',
+            data.message
+          );
         }
       } catch (error) {
-        console.error('❌ DEBUG ERROR: Failed to fetch live USDC data:', error);
+        console.error('❌ SYNC DEBUG: History Fetch Failed:', error);
       }
     };
 
