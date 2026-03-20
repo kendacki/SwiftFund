@@ -160,16 +160,30 @@ export default function PortfolioPage() {
     },
   };
 
+  // Centralized (fail-safe) USD->HBAR conversion helper.
+  // Guarantees we never "accidentally" display a 1:1 ratio by falling back to $0.10/HBAR
+  // when the live price is missing/unavailable.
+  const getConvertedHbar = (usdcInput: string | number) => {
+    const inputNum = Number(usdcInput) || 0;
+    const price = Number(hbarPrice) > 0 ? Number(hbarPrice) : 0.10;
+    return (inputNum / price).toFixed(2);
+  };
+
   const swapFromAmountNum = Number(swapFromAmount) || 0;
   const swapToAmountNum =
     swapFromToken === 'USDC' && swapToToken === 'HBAR'
-      ? hbarPrice > 0
-        ? swapFromAmountNum / hbarPrice
-        : 0
+      ? swapFromAmountNum / (Number(hbarPrice) > 0 ? Number(hbarPrice) : 0.10)
       : swapFromToken === 'HBAR' && swapToToken === 'USDC'
         ? swapFromAmountNum * hbarPrice
         : swapFromAmountNum;
-  const swapToAmountStr = swapToAmountNum.toFixed(6);
+
+  const safeSwapFromAmount = swapFromAmount?.toString().trim();
+  const swapToAmountStr =
+    swapFromToken === 'USDC' && swapToToken === 'HBAR'
+      ? safeSwapFromAmount
+        ? getConvertedHbar(safeSwapFromAmount)
+        : '0.00'
+      : swapToAmountNum.toFixed(6);
 
   // Resolve the active wallet address from Privy.
   useEffect(() => {
@@ -735,9 +749,9 @@ export default function PortfolioPage() {
           maximumFractionDigits: 6,
         });
 
-        // HBAR received (USDC → HBAR): use live CoinCap price, not raw USDC input
-        const receivedHbar =
-          hbarPrice > 0 ? amountNum / hbarPrice : amountNum * 10;
+        // HBAR received (USDC → HBAR): enforce centralized fail-safe conversion
+        const receivedHbarStr = getConvertedHbar(safeAmount);
+        const receivedHbar = Number(receivedHbarStr);
 
         // 1) USDC out on EVM — keep in isolated USDC history
         setUsdcTransactions((prev: any[]) => {
@@ -770,14 +784,14 @@ export default function PortfolioPage() {
         const newSwapHbarTx: DashboardTx = {
           id: `swap-hbar-${evmHash}`,
           hash: shortHash,
-          amount: `+${receivedHbar.toFixed(2)} HBAR`,
+          amount: `+${receivedHbarStr} HBAR`,
           tokenType: 'HBAR',
           time: new Date().toLocaleString(),
           date: new Date().toISOString(),
         };
 
         setTransactions((prev) => [newSwapHbarTx, ...(prev || [])]);
-        setHbarBalance((prev) => prev + receivedHbar);
+        setHbarBalance((prev) => prev + Number(getConvertedHbar(safeAmount)));
 
         toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
         setIsSwapModalOpen(false);
