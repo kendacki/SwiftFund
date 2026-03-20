@@ -131,8 +131,21 @@ export async function POST(req: Request) {
       console.warn('⚠️ ORACLE DEBUG: exchangerate fetch failed; using $0.10/HBAR', err);
     }
 
-    const hbarToSend = usdPerHbar > 0 ? amount / usdPerHbar : amount * 10;
-    console.log('💱 ORACLE DEBUG: amountUSD=', amount, 'usdPerHbar=', usdPerHbar, 'hbarToSend=', hbarToSend);
+    // Hedera Hbar uses 8 decimals (tinybars). If `hbarToSend` has more than
+    // 8 decimals, the SDK will throw: "Hbar in tinybars contains decimals".
+    // Clamp to 8 decimals before constructing Hbar.
+    const hbarToSendRaw = usdPerHbar > 0 ? amount / usdPerHbar : amount * 10;
+    const hbarToSend = Number(hbarToSendRaw.toFixed(8));
+    console.log(
+      '💱 ORACLE DEBUG: amountUSD=',
+      amount,
+      'usdPerHbar=',
+      usdPerHbar,
+      'hbarToSendRaw=',
+      hbarToSendRaw,
+      'hbarToSendClamped=',
+      hbarToSend
+    );
 
     const sendTx = await new TransferTransaction()
       .addHbarTransfer(operatorId, new Hbar(-hbarToSend))
