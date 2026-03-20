@@ -39,6 +39,8 @@ interface DashboardTx {
   date?: string;
   from?: string;
   to?: string;
+  _origin?: 'optimistic' | 'fetched';
+  _cachedAt?: number;
 }
 
 /** Funded project entry for claim yield list (from API or mock). */
@@ -63,6 +65,8 @@ function SpinnerIcon({ className }: { className?: string }) {
 export default function PortfolioPage() {
   const TX_CACHE_KEY = 'swiftfund_tx_cache';
   const USDC_TX_CACHE_KEY = 'swiftfund_usdc_tx_cache';
+  const OPTIMISTIC_TX_TTL_MS = 30 * 60 * 1000; // 30 minutes
+  const FETCHED_TX_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
   const { user, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
@@ -163,19 +167,69 @@ export default function PortfolioPage() {
     },
   };
 
-  const cacheTransactions = (txs: any[]) => {
+  const normalizeForCache = (
+    txs: any[],
+    originOverride?: 'optimistic' | 'fetched'
+  ) => {
+    const now = Date.now();
+    return (txs || []).map((tx: any) => ({
+      ...tx,
+      _origin: originOverride ?? tx?._origin ?? 'fetched',
+      _cachedAt: typeof tx?._cachedAt === 'number' ? tx._cachedAt : now,
+    }));
+  };
+
+  const readCachedTxs = (key: string) => {
     try {
-      localStorage.setItem(TX_CACHE_KEY, JSON.stringify((txs || []).slice(0, 50)));
+      const raw = localStorage.getItem(key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      const rows = Array.isArray(parsed) ? parsed : parsed?.data;
+      return Array.isArray(rows) ? rows : [];
+    } catch (e) {
+      console.error('Cache parse error', e);
+      return [];
+    }
+  };
+
+  const pruneStaleCacheRows = (rows: any[]) => {
+    const now = Date.now();
+    return (rows || []).filter((tx: any) => {
+      const cachedAt = typeof tx?._cachedAt === 'number' ? tx._cachedAt : now;
+      const origin = tx?._origin === 'optimistic' ? 'optimistic' : 'fetched';
+      if (origin === 'optimistic') {
+        return now - cachedAt <= OPTIMISTIC_TX_TTL_MS;
+      }
+      return now - cachedAt <= FETCHED_TX_TTL_MS;
+    });
+  };
+
+  const cacheTransactions = (
+    txs: any[],
+    originOverride?: 'optimistic' | 'fetched'
+  ) => {
+    try {
+      const normalized = normalizeForCache(txs, originOverride);
+      const pruned = pruneStaleCacheRows(normalized);
+      localStorage.setItem(
+        TX_CACHE_KEY,
+        JSON.stringify({ savedAt: Date.now(), data: pruned.slice(0, 50) })
+      );
     } catch (e) {
       console.error('❌ CACHE DEBUG: Failed to persist tx cache', e);
     }
   };
 
-  const cacheUsdcTransactions = (txs: any[]) => {
+  const cacheUsdcTransactions = (
+    txs: any[],
+    originOverride?: 'optimistic' | 'fetched'
+  ) => {
     try {
+      const normalized = normalizeForCache(txs, originOverride);
+      const pruned = pruneStaleCacheRows(normalized);
       localStorage.setItem(
         USDC_TX_CACHE_KEY,
-        JSON.stringify((txs || []).slice(0, 50))
+        JSON.stringify({ savedAt: Date.now(), data: pruned.slice(0, 50) })
       );
     } catch (e) {
       console.error('❌ CACHE DEBUG: Failed to persist USDC tx cache', e);
@@ -184,24 +238,16 @@ export default function PortfolioPage() {
 
   // Hydrate transaction cache instantly on mount while indexers catch up.
   useEffect(() => {
-    const cachedTxs = localStorage.getItem(TX_CACHE_KEY);
-    if (cachedTxs) {
-      try {
-        setTransactions(JSON.parse(cachedTxs));
-        console.log('💾 CACHE DEBUG: Loaded transactions from local storage.');
-      } catch (e) {
-        console.error('Cache parse error', e);
-      }
+    const cachedTxs = pruneStaleCacheRows(readCachedTxs(TX_CACHE_KEY));
+    if (cachedTxs.length > 0) {
+      setTransactions(cachedTxs);
+      console.log('💾 CACHE DEBUG: Loaded transactions from local storage.');
     }
 
-    const cachedUsdcTxs = localStorage.getItem(USDC_TX_CACHE_KEY);
-    if (cachedUsdcTxs) {
-      try {
-        setUsdcTransactions(JSON.parse(cachedUsdcTxs));
-        console.log('💾 CACHE DEBUG: Loaded USDC transactions from local storage.');
-      } catch (e) {
-        console.error('USDC cache parse error', e);
-      }
+    const cachedUsdcTxs = pruneStaleCacheRows(readCachedTxs(USDC_TX_CACHE_KEY));
+    if (cachedUsdcTxs.length > 0) {
+      setUsdcTransactions(cachedUsdcTxs);
+      console.log('💾 CACHE DEBUG: Loaded USDC transactions from local storage.');
     }
   }, []);
 
@@ -319,9 +365,7 @@ export default function PortfolioPage() {
               const fetchedUsdcData = realUsdcTransactions || [];
               let cachedData: any[] = [];
               try {
-                cachedData = JSON.parse(
-                  localStorage.getItem(USDC_TX_CACHE_KEY) || '[]'
-                );
+                cachedData = readCachedTxs(USDC_TX_CACHE_KEY);
               } catch (e) {
                 console.error('Cache read error:', e);
               }
@@ -340,7 +384,7 @@ export default function PortfolioPage() {
                 )
                 .slice(0, 100);
 
-              cacheUsdcTransactions(finalTxs);
+              cacheUsdcTransactions(finalTxs, 'fetched');
               console.log('🔗 SYNC DEBUG: Successfully merged chain data with local cache.');
               return finalTxs;
             });
@@ -542,7 +586,7 @@ export default function PortfolioPage() {
               const fetchedHederaData = mapped || [];
               let cachedData: any[] = [];
               try {
-                cachedData = JSON.parse(localStorage.getItem(TX_CACHE_KEY) || '[]');
+                cachedData = readCachedTxs(TX_CACHE_KEY);
               } catch (e) {
                 console.error('Cache read error:', e);
               }
@@ -561,7 +605,7 @@ export default function PortfolioPage() {
                 )
                 .slice(0, 100);
 
-              cacheTransactions(finalTxs);
+              cacheTransactions(finalTxs, 'fetched');
               console.log('🔗 SYNC DEBUG: Successfully merged chain data with local cache.');
               return finalTxs;
             });
@@ -882,11 +926,13 @@ export default function PortfolioPage() {
             status: 'Completed',
             from: activeWallet.address,
             to: treasuryAddress,
+            _origin: 'optimistic' as const,
+            _cachedAt: Date.now(),
           };
 
           const withoutDupe = prev.filter((t: any) => t.id !== newTx.id);
           const updatedArray = [newTx, ...withoutDupe];
-          cacheUsdcTransactions(updatedArray);
+          cacheUsdcTransactions(updatedArray, 'optimistic');
           return updatedArray;
         });
 
@@ -905,18 +951,18 @@ export default function PortfolioPage() {
           type: 'Swap',
           time: new Date().toLocaleString(),
           date: new Date().toISOString(),
+          _origin: 'optimistic',
+          _cachedAt: Date.now(),
         };
 
         // Cache-first write to avoid losing optimistic swap tx on refresh/indexer lag.
         try {
-          const existingCache = JSON.parse(
-            localStorage.getItem(TX_CACHE_KEY) || '[]'
-          );
+          const existingCache = readCachedTxs(TX_CACHE_KEY);
           const filteredCache = (existingCache || []).filter(
             (cachedTx: any) => cachedTx.id !== newSwapHbarTx.id
           );
           const updatedCache = [newSwapHbarTx, ...filteredCache].slice(0, 50);
-          localStorage.setItem(TX_CACHE_KEY, JSON.stringify(updatedCache));
+          cacheTransactions(updatedCache, 'optimistic');
           if (typeof setTransactions === 'function') {
             setTransactions(updatedCache as DashboardTx[]);
           }
@@ -1600,10 +1646,12 @@ export default function PortfolioPage() {
                               to: recipientAddress,
                               time: new Date().toLocaleString(),
                               date: new Date().toISOString(),
+                              _origin: 'optimistic',
+                              _cachedAt: Date.now(),
                             } as any,
                             ...prev,
                           ];
-                            cacheTransactions(updatedArray);
+                            cacheTransactions(updatedArray, 'optimistic');
                             return updatedArray;
                           });
                         } else {
@@ -1676,10 +1724,12 @@ export default function PortfolioPage() {
                               to: recipientAddress,
                               time: new Date().toLocaleString(),
                               date: new Date().toISOString(),
+                              _origin: 'optimistic',
+                              _cachedAt: Date.now(),
                             } as any,
                             ...prev,
                           ];
-                            cacheTransactions(updatedArray);
+                            cacheTransactions(updatedArray, 'optimistic');
                             return updatedArray;
                           });
                         }
