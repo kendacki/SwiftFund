@@ -423,6 +423,8 @@ export default function PortfolioPage() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
+        // Mirror-node "source of truth" values, with optional optimistic deltas re-applied later.
+        let mirrorHbar: number | null = null;
 
         // 0) Fetch live HBAR/USD exchange rate (current_rate.cent_equivalent / hbar_equivalent / 100 = USD per HBAR).
         try {
@@ -484,7 +486,7 @@ export default function PortfolioPage() {
 
           if (typeof tinybar === 'number') {
             const hbar = tinybar / 1e8;
-            if (!cancelled) setHbarBalance(hbar);
+            mirrorHbar = hbar;
           }
 
           const swindToken = tokens.find((t) => t.token_id === SWIND_TOKEN_ID);
@@ -609,6 +611,26 @@ export default function PortfolioPage() {
               console.log('🔗 SYNC DEBUG: Successfully merged chain data with local cache.');
               return finalTxs;
             });
+
+            // Re-apply optimistic HBAR deltas (swap/send) ONLY if the Hedera tx is not indexed yet.
+            // This prevents the swap-deducted balance from snapping back on refresh.
+            if (typeof mirrorHbar === 'number') {
+              const fetchedTxIds = new Set(mapped.map((t) => t.id));
+              const cachedRows = pruneStaleCacheRows(
+                readCachedTxs(TX_CACHE_KEY)
+              );
+              const pendingHbarDelta = (cachedRows || [])
+                .filter(
+                  (tx: any) =>
+                    tx?._origin === 'optimistic' &&
+                    tx?.tokenType === 'HBAR' &&
+                    typeof tx?._hbarDelta === 'number' &&
+                    !fetchedTxIds.has(tx?.id)
+                )
+                .reduce((acc: number, tx: any) => acc + tx._hbarDelta, 0);
+
+              setHbarBalance(mirrorHbar + pendingHbarDelta);
+            }
           }
         }
       } catch {
@@ -944,8 +966,9 @@ export default function PortfolioPage() {
             : String(evmHash);
 
         const newSwapHbarTx: DashboardTx = {
-          id: `swap-hbar-${evmHash}`,
-          hash: shortHash,
+          // Use Hedera tx id so we can detect when mirror-node has indexed it.
+          id: result.hederaTxId,
+          hash: result.hederaTxId,
           amount: `${receivedHbarStr} HBAR`,
           tokenType: 'HBAR',
           type: 'Swap',
@@ -953,6 +976,7 @@ export default function PortfolioPage() {
           date: new Date().toISOString(),
           _origin: 'optimistic',
           _cachedAt: Date.now(),
+          _hbarDelta: Number(receivedHbarStr),
         };
 
         // Cache-first write to avoid losing optimistic swap tx on refresh/indexer lag.
