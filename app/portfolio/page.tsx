@@ -297,7 +297,9 @@ export default function PortfolioPage() {
     // re-initializes during swap/deposit flows.
     if (prevUsdcAddressRef.current !== address) {
       prevUsdcAddressRef.current = address;
-      setUsdcTransactions([]);
+      // Restore from cache immediately (avoids "instant clear" when Etherscan/Mirror lags)
+      const cached = pruneStaleCacheRows(readCachedTxs(USDC_TX_CACHE_KEY));
+      setUsdcTransactions(cached);
     }
 
     const fetchLiveUsdc = async () => {
@@ -394,6 +396,9 @@ export default function PortfolioPage() {
               '⚠️ SYNC DEBUG: Etherscan returned no valid token transfers. Reason:',
               historyData?.message || 'Unknown'
             );
+            // If chain isn't indexed yet (result empty), fall back to cached USDC txs.
+            const cached = pruneStaleCacheRows(readCachedTxs(USDC_TX_CACHE_KEY));
+            if (cached.length > 0) setUsdcTransactions(cached);
           }
         } else {
           console.warn(
@@ -401,6 +406,8 @@ export default function PortfolioPage() {
             historyData?.message || 'Unknown'
           );
           // Keep existing history if the API is temporarily failing / not indexed yet.
+          const cached = pruneStaleCacheRows(readCachedTxs(USDC_TX_CACHE_KEY));
+          if (cached.length > 0) setUsdcTransactions(cached);
         }
       } catch (error) {
         console.error('❌ DEBUG ERROR: Failed to fetch live USDC data:', error);
