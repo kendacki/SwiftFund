@@ -81,7 +81,8 @@ export async function insertProject(project: Project): Promise<void> {
     goal_amount: project.goalAmount,
     amount_raised: project.amountRaised,
     image_url: project.imageUrl || '',
-    status: project.status,
+    // Force into the review queue.
+    status: 'pending',
     created_at: project.createdAt,
     updated_at: project.updatedAt,
     tags: project.tags ?? ['all'],
@@ -91,10 +92,20 @@ export async function insertProject(project: Project): Promise<void> {
     verified_youtube_revenue: project.verifiedYoutubeRevenue ?? null,
     youtube_linked: project.youtubeLinked ?? null,
   };
-  const { error } = await supabase.from('projects').insert(row as never);
+
+  const { data, error } = await supabase
+    .from('projects')
+    .insert([row as never])
+    .select();
+
   if (error) {
-    console.error('insertProject error:', error);
-    throw error;
+    console.error('🚨 SUPABASE FATAL INSERT ERROR:');
+    console.error('Message:', (error as any).message);
+    console.error('Details:', (error as any).details);
+    console.error('Hint:', (error as any).hint);
+    console.error('Code:', (error as any).code);
+    // Throw the actual message to the frontend so the user can see it.
+    throw new Error(`Database Error: ${(error as any).message}`);
   }
 }
 
