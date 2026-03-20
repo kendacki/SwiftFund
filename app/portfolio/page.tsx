@@ -267,8 +267,25 @@ export default function PortfolioPage() {
               };
             });
 
-            // Safely store in isolated state
-            setUsdcTransactions(realUsdcTransactions);
+            // Merge with optimistic state (API can lag) + dedupe by id/hash
+            setUsdcTransactions((prev: any[]) => {
+              const safePrev = prev || [];
+              const fetchedUsdcData = realUsdcTransactions || [];
+              const combined = [...safePrev, ...fetchedUsdcData];
+
+              const keyFor = (tx: any) => tx?.id ?? tx?.hash;
+              const uniqueTxs = Array.from(
+                new Map(combined.map((tx: any) => [keyFor(tx), tx])).values()
+              );
+
+              uniqueTxs.sort(
+                (a: any, b: any) =>
+                  new Date(b?.date ?? b?.time ?? 0).getTime() -
+                  new Date(a?.date ?? a?.time ?? 0).getTime()
+              );
+
+              return uniqueTxs;
+            });
           } else {
             // Keep existing history until the indexer catches up (avoids the swap/deposit disappearing right after action).
             console.log('⚠️ DEBUG: Etherscan returned 0 USDC txs; keeping existing history.');
@@ -329,7 +346,7 @@ export default function PortfolioPage() {
           if (!accountRes.ok) {
           if (!cancelled) {
             setSwindBalance(0);
-            setTransactions([]);
+              // Keep existing transactions; mirror node may be temporarily unavailable / lagging
           }
           return;
         }
@@ -339,7 +356,7 @@ export default function PortfolioPage() {
         if (!accountId) {
           if (!cancelled) {
             setSwindBalance(0);
-            setTransactions([]);
+            // Keep existing transactions; mirror node may be temporarily unavailable / lagging
           }
           return;
         }
@@ -451,12 +468,30 @@ export default function PortfolioPage() {
           });
 
           if (!cancelled) {
-            setTransactions(mapped);
+            // Merge with optimistic state + dedupe by id/hash (RPC indexer lag can otherwise ghost rows)
+            setTransactions((prev: DashboardTx[]) => {
+              const safePrev = prev || [];
+              const fetchedHederaData = mapped || [];
+              const combined = [...safePrev, ...fetchedHederaData];
+
+              const keyFor = (tx: any) => tx?.id ?? tx?.hash;
+              const uniqueTxs = Array.from(
+                new Map(combined.map((tx: any) => [keyFor(tx), tx])).values()
+              );
+
+              uniqueTxs.sort(
+                (a: any, b: any) =>
+                  new Date(b?.date ?? b?.time ?? 0).getTime() -
+                  new Date(a?.date ?? a?.time ?? 0).getTime()
+              );
+
+              return uniqueTxs;
+            });
           }
         }
       } catch {
         if (!cancelled) {
-          setTransactions([]);
+          // Keep existing transactions; mirror node may be temporarily unavailable / lagging
         }
       } finally {
         if (!cancelled) {
