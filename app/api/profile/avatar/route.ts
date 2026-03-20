@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { getPrivyClient } from '@/lib/privy';
 
 const AVATAR_PREFIX = 'avatars/';
+// Your Supabase project cover images bucket is already `project-images`.
+// If the separate `avatars` bucket doesn't exist, this prevents "Bucket not found".
+const AVATAR_BUCKET = 'project-images';
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB (Vercel serverless limit)
 
 function getAuthUserId(req: Request): Promise<string | null> {
@@ -35,7 +38,7 @@ export async function GET(req: Request) {
 
     // Ensure the file exists (download will 404 if missing).
     const { error: downloadError } = await supabase.storage
-      .from('avatars')
+      .from(AVATAR_BUCKET)
       .download(filePath);
 
     if (downloadError) {
@@ -43,7 +46,7 @@ export async function GET(req: Request) {
     }
 
     const { data: publicUrlData } = supabase.storage
-      .from('avatars')
+      .from(AVATAR_BUCKET)
       .getPublicUrl(filePath);
 
     return NextResponse.json({ url: publicUrlData?.publicUrl ?? null });
@@ -84,7 +87,7 @@ export async function POST(req: Request) {
     const filePath = `${AVATAR_PREFIX}${userId}.jpg`;
 
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
+      .from(AVATAR_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true,
@@ -95,14 +98,12 @@ export async function POST(req: Request) {
       console.error('🚨 SUPABASE AVATAR UPLOAD FAILED.');
       console.error('Error Message:', uploadError?.message);
       console.error('Error Name:', (uploadError as any)?.name);
-      console.error(
-        "Target Bucket: 'avatars' (Verify this exists in Supabase)"
-      );
+      console.error(`Target Bucket: '${AVATAR_BUCKET}' (Verify this exists in Supabase)`);
       throw new Error(`Avatar upload failed: ${uploadError?.message}`);
     }
 
     const { data: publicUrlData } = supabase.storage
-      .from('avatars')
+      .from(AVATAR_BUCKET)
       .getPublicUrl(filePath);
 
     return NextResponse.json({ url: publicUrlData?.publicUrl ?? null });
