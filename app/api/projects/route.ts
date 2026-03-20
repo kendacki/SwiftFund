@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { createClient } from '@supabase/supabase-js';
 import { getPrivyClient } from '@/lib/privy';
 import { getProjects, insertProject, updateProjectStatus, getProjectById } from '@/lib/projectsDb';
@@ -11,12 +10,6 @@ const PROJECTS_DATA_PATH = 'projects/data.json';
 const PROJECTS_IMAGE_PREFIX = 'projects/images/';
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4 MB
 const MAX_PDF_SIZE = 5 * 1024 * 1024; // 5 MB
-
-function ensureBlobToken(): void {
-  if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not set.');
-  }
-}
 
 async function getAuthUserId(req: Request): Promise<string | null> {
   const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -92,16 +85,41 @@ export async function POST(req: Request) {
 
     let imageUrl = '';
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-      ensureBlobToken();
       if (imageFile.size > MAX_IMAGE_SIZE) {
         return NextResponse.json({ error: 'Image too large (max 4 MB)' }, { status: 400 });
       }
-      const blob = await put(`${PROJECTS_IMAGE_PREFIX}${id}.jpg`, imageFile, {
-        access: 'public',
-        contentType: imageFile.type || 'image/jpeg',
-        addRandomSuffix: false,
-      });
-      imageUrl = blob.url;
+      if (!supabase) {
+        return NextResponse.json(
+          { error: 'Supabase Storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+          { status: 500 }
+        );
+      }
+
+      // 1) Create a unique URL-safe file name
+      const fileExt = imageFile.name.split('.').pop() || 'jpg';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `covers/${fileName}`;
+
+      // 2) Upload the image to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('project-images')
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: imageFile.type || 'image/jpeg',
+        });
+
+      if (uploadError) {
+        console.error('🚨 SUPABASE IMAGE UPLOAD ERROR:', uploadError);
+        return NextResponse.json({ error: 'Failed to upload image to Supabase.' }, { status: 500 });
+      }
+
+      // 3) Extract the public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('project-images')
+        .getPublicUrl(filePath);
+
+      imageUrl = publicUrlData?.publicUrl ?? '';
     }
 
     let accountInfoPdfUrl = '';

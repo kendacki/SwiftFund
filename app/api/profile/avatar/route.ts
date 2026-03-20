@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server';
-import { list, put } from '@vercel/blob';
+import { createClient } from '@supabase/supabase-js';
 import { getPrivyClient } from '@/lib/privy';
 
 const AVATAR_PREFIX = 'avatars/';
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB (Vercel serverless limit)
-
-function ensureBlobToken(): void {
-  if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not set. Add it in Vercel → Project → Storage → Blob.');
-  }
-}
 
 function getAuthUserId(req: Request): Promise<string | null> {
   const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -22,18 +16,37 @@ function getAuthUserId(req: Request): Promise<string | null> {
 
 export async function GET(req: Request) {
   try {
-    ensureBlobToken();
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { blobs } = await list({ prefix: AVATAR_PREFIX, limit: 500 });
-    const pathname = `${AVATAR_PREFIX}${userId}.jpg`;
-    const blob = blobs.find((b) => b.pathname === pathname);
-    if (!blob?.url) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { error: 'Supabase Storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const filePath = `${AVATAR_PREFIX}${userId}.jpg`;
+
+    // Ensure the file exists (download will 404 if missing).
+    const { error: downloadError } = await supabase.storage
+      .from('avatars')
+      .download(filePath);
+
+    if (downloadError) {
       return NextResponse.json({ url: null }, { status: 200 });
     }
-    return NextResponse.json({ url: blob.url });
+
+    const { data: publicUrlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    return NextResponse.json({ url: publicUrlData?.publicUrl ?? null });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to get avatar';
     console.error(message);
@@ -43,7 +56,6 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    ensureBlobToken();
     const userId = await getAuthUserId(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -56,13 +68,39 @@ export async function POST(req: Request) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: 'File too large (max 4 MB)' }, { status: 400 });
     }
-    const pathname = `${AVATAR_PREFIX}${userId}.jpg`;
-    const blob = await put(pathname, file, {
-      access: 'public',
-      contentType: file.type || 'image/jpeg',
-      addRandomSuffix: false,
-    });
-    return NextResponse.json({ url: blob.url });
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { error: 'Supabase Storage is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Keep a deterministic file name so the avatar URL stays stable.
+    const filePath = `${AVATAR_PREFIX}${userId}.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: file.type || 'image/jpeg',
+      });
+
+    if (uploadError) {
+      console.error('🚨 SUPABASE AVATAR UPLOAD ERROR:', uploadError);
+      return NextResponse.json({ error: 'Failed to upload avatar to Supabase.' }, { status: 500 });
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    return NextResponse.json({ url: publicUrlData?.publicUrl ?? null });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to upload avatar';
     console.error(message);
