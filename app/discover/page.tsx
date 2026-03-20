@@ -174,8 +174,12 @@ export default function DiscoverPage() {
   const allProjects = useMemo(() => {
     const fromApi = apiProjects;
     const mockWithTags = MOCK_PROJECTS.map((p) => ({ ...p, tags: ['all'] as FilterKey[] }));
-    if (fromApi.length > 0) return [...fromApi, ...mockWithTags];
-    return mockWithTags;
+    if (fromApi.length > 0) return fromApi;
+
+    // Only render mocks in development; in production show empty state
+    // until admin has approved campaigns.
+    if (process.env.NODE_ENV === 'development') return mockWithTags;
+    return [];
   }, [apiProjects]);
 
   const filteredProjects = useMemo(() => {
@@ -409,22 +413,30 @@ export default function DiscoverPage() {
             Loading projects…
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {filteredProjects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-              >
-                <ProjectCard
-                  {...project}
-                  onFundClick={openModal}
-                />
-              </motion.div>
-            ))}
-          </div>
+          <>
+            {filteredProjects.length === 0 ? (
+              <div className="text-sm text-neutral-500 py-10 text-center">
+                No approved projects yet. Check back soon.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {filteredProjects.map((project, index) => (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                  >
+                    <ProjectCard
+                      {...project}
+                      onFundClick={openModal}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
