@@ -82,6 +82,8 @@ export async function POST(req: Request) {
     // *Production Note: Parse logs to validate recipient + exact amount.*
 
     // 2) HEDERA EXECUTION (RELEASE FUNDS)
+    // The incoming `amount` is in USD-denominated USDC units.
+    // Convert USD -> HBAR before releasing, otherwise we get a 1:1 USDC->HBAR mismatch.
     const operatorId =
       process.env.HEDERA_OPERATOR_ID?.trim() ||
       process.env.HEDERA_TESTNET_ACCOUNT_ID?.trim() ||
@@ -104,9 +106,37 @@ export async function POST(req: Request) {
       PrivateKey.fromString(operatorKey)
     );
 
+    // Fetch live HBAR/USD exchange rate (prefer Hedera mirror node).
+    // If it fails, fall back to $0.10/HBAR to prevent 1:1 display/mints.
+    let usdPerHbar = 0.10;
+    try {
+      const rateRes = await fetch(
+        'https://mainnet.mirrornode.hedera.com/api/v1/network/exchangerate',
+        { cache: 'no-store' }
+      );
+      if (rateRes.ok) {
+        const rateJson = await rateRes.json();
+        const current = rateJson?.current_rate;
+        const cent = current?.cent_equivalent;
+        const hbarEq = current?.hbar_equivalent;
+        if (
+          typeof cent === 'number' &&
+          typeof hbarEq === 'number' &&
+          hbarEq > 0
+        ) {
+          usdPerHbar = cent / hbarEq / 100;
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ ORACLE DEBUG: exchangerate fetch failed; using $0.10/HBAR', err);
+    }
+
+    const hbarToSend = usdPerHbar > 0 ? amount / usdPerHbar : amount * 10;
+    console.log('💱 ORACLE DEBUG: amountUSD=', amount, 'usdPerHbar=', usdPerHbar, 'hbarToSend=', hbarToSend);
+
     const sendTx = await new TransferTransaction()
-      .addHbarTransfer(operatorId, new Hbar(-amount))
-      .addHbarTransfer(destinationAddress, new Hbar(amount))
+      .addHbarTransfer(operatorId, new Hbar(-hbarToSend))
+      .addHbarTransfer(destinationAddress, new Hbar(hbarToSend))
       .execute(client);
 
     const receiptHedera = await sendTx.getReceipt(client);
