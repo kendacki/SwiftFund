@@ -315,6 +315,7 @@ export default function PortfolioPage() {
         const balance = await usdcContract.balanceOf(address);
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
         setUsdcAmount(formattedBalance);
+        const chainBalance = formattedBalance;
 
         // 2. Fetch Real Transaction History (Unlocked with API Key)
         const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
@@ -360,6 +361,49 @@ export default function PortfolioPage() {
                 hash: tx.hash,
               };
             });
+
+            // If Etherscan is lagging, the USDC balanceOf may still be behind the
+            // optimistic transaction history we cached. To prevent the "deduction"
+            // from disappearing on refresh, re-apply only recent cached deltas whose
+            // tx ids are not yet present in this fetched history page.
+            try {
+              const fetchedTxIds = new Set(realUsdcTransactions.map((t) => t.id));
+              const now = Date.now();
+
+              const cached = pruneStaleCacheRows(
+                readCachedTxs(USDC_TX_CACHE_KEY)
+              );
+
+              const parseSignedUsdc = (amt: any): number => {
+                const s = String(amt ?? '');
+                const cleaned = s
+                  .replace(/USDC/gi, '')
+                  .replace(/,/g, '')
+                  .trim();
+                const n = Number(cleaned);
+                return Number.isFinite(n) ? n : 0;
+              };
+
+              const pendingDelta = (cached || [])
+                .filter((tx: any) => {
+                  const cachedAt =
+                    typeof tx?._cachedAt === 'number' ? tx._cachedAt : now;
+                  return now - cachedAt <= OPTIMISTIC_TX_TTL_MS;
+                })
+                .filter((tx: any) => tx?.id && !fetchedTxIds.has(tx.id))
+                .reduce((acc: number, tx: any) => acc + parseSignedUsdc(tx.amount), 0);
+
+              if (pendingDelta !== 0) {
+                const adjusted = Math.max(0, chainBalance + pendingDelta);
+                console.log(
+                  '🧮 SYNC DEBUG: USDC balance adjusted using pendingDelta',
+                  { chainBalance, pendingDelta, adjusted }
+                );
+                setUsdcAmount(adjusted);
+              }
+            } catch (e) {
+              console.error('❌ SYNC DEBUG: USDC pending delta calc failed', e);
+            }
 
             // Merge with optimistic state (API can lag) + dedupe by id/hash
             setUsdcTransactions((prev: any[]) => {
