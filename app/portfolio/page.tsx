@@ -65,8 +65,10 @@ function SpinnerIcon({ className }: { className?: string }) {
 export default function PortfolioPage() {
   const TX_CACHE_KEY = 'swiftfund_tx_cache';
   const USDC_TX_CACHE_KEY = 'swiftfund_usdc_tx_cache';
-  const OPTIMISTIC_TX_TTL_MS = 30 * 60 * 1000; // 30 minutes
-  const FETCHED_TX_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+  // Optimistic tx rows (swaps/deposits injected immediately) must survive
+  // indexer/API lag. 30 minutes was too short and caused USDC history to clear.
+  const OPTIMISTIC_TX_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const FETCHED_TX_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   const { user, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
