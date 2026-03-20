@@ -63,7 +63,6 @@ export default function PortfolioPage() {
   const { user, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const [address, setAddress] = useState<string | null>(null);
-  const activeWalletAddress = wallets[0]?.address ?? null;
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -199,18 +198,20 @@ export default function PortfolioPage() {
 
   // Fetch live Sepolia USDC balance for the connected Privy wallet.
   useEffect(() => {
-    if (!activeWalletAddress) return;
+    if (!address) return;
 
     // Only clear when the connected wallet address actually changes.
     // This prevents temporarily wiping USDC rows when the wallet provider/network
     // re-initializes during swap/deposit flows.
-    if (prevUsdcAddressRef.current !== activeWalletAddress) {
-      prevUsdcAddressRef.current = activeWalletAddress;
+    if (prevUsdcAddressRef.current !== address) {
+      prevUsdcAddressRef.current = address;
       setUsdcTransactions([]);
     }
 
     const fetchLiveUsdc = async () => {
-      console.log('🔄 SYNC DEBUG: Fetching live USDC data for', activeWalletAddress);
+      const activeWallet = wallets[0];
+      if (!activeWallet?.address) return;
+      console.log('🔄 SYNC DEBUG: Fetching live USDC data for', activeWallet.address);
 
       const usdcAddress =
         process.env.NEXT_PUBLIC_TESTNET_USDC_ADDRESS ||
@@ -224,7 +225,7 @@ export default function PortfolioPage() {
         const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
         const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
 
-        const balance = await usdcContract.balanceOf(activeWalletAddress);
+        const balance = await usdcContract.balanceOf(activeWallet.address);
         const formattedBalance = parseFloat(ethers.formatUnits(balance, 6));
 
         setUsdcAmount(formattedBalance);
@@ -238,7 +239,7 @@ export default function PortfolioPage() {
         const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
         if (!apiKey) throw new Error('Missing Etherscan API Key');
 
-        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWalletAddress}&page=1&offset=20&sort=desc&apikey=${apiKey}`;
+        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${activeWallet.address}&page=1&offset=20&sort=desc&apikey=${apiKey}`;
 
         const res = await fetch(etherscanUrl);
         const data = await res.json();
@@ -246,7 +247,7 @@ export default function PortfolioPage() {
         if (data.status === '1' && data.result) {
           const realUsdcTx = data.result.map((tx: any) => {
             const isReceive =
-              tx.to?.toLowerCase?.() === activeWalletAddress.toLowerCase();
+              tx.to?.toLowerCase?.() === activeWallet.address.toLowerCase();
             const amountNum = parseFloat(ethers.formatUnits(tx.value, 6));
             const sign = isReceive ? '+' : '-';
             return {
@@ -285,7 +286,7 @@ export default function PortfolioPage() {
     const intervalId = setInterval(fetchLiveUsdc, 30000);
 
     return () => clearInterval(intervalId);
-  }, [activeWalletAddress]);
+  }, [address]);
 
   // Fetch live dashboard data (balances + recent transactions) from Hedera mirror node.
   useEffect(() => {
@@ -847,11 +848,6 @@ export default function PortfolioPage() {
     return true;
   });
 
-  // Calculate fiat value of USDC + HBAR (and SWIND) for master display
-  const hbarFiatValue = (hbarBalance || 0) * (hbarPrice || 0);
-  const usdcFiatValue = usdcAmount || 0; // USDC is pegged to $1
-  const totalPortfolioValue = hbarFiatValue + swindUsdValue + usdcFiatValue;
-
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 px-4 sm:px-6 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -878,13 +874,13 @@ export default function PortfolioPage() {
               <div className="px-4 sm:px-6 py-5 flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                    {totalPortfolioValue > 0
+                    {totalUsdBalance > 0
                       ? Intl.NumberFormat('en-US', {
                           style: 'currency',
                           currency: 'USD',
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        }).format(totalPortfolioValue)
+                        }).format(totalUsdBalance)
                       : '$0.00'}
                   </p>
                   <p className="font-heading text-sm text-neutral-500 mt-1 tracking-tight">
