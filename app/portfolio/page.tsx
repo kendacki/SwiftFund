@@ -827,7 +827,11 @@ export default function PortfolioPage() {
         };
 
         setTransactions((prev) => [newSwapHbarTx, ...(prev || [])]);
-        setHbarBalance((prev) => prev + Number(getConvertedHbar(safeAmount)));
+        // Ensure we add the converted HBAR amount (not the raw USDC input).
+        if (typeof setHbarBalance === 'function') {
+          const addedHbar = Number(getConvertedHbar(safeAmount));
+          setHbarBalance((prev) => prev + addedHbar);
+        }
 
         toast.success(`Swap Complete! Hedera Tx: ${result.hederaTxId}`);
         setIsSwapModalOpen(false);
