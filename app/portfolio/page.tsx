@@ -317,20 +317,31 @@ export default function PortfolioPage() {
             setUsdcTransactions((prev: any[]) => {
               const safePrev = prev || [];
               const fetchedUsdcData = realUsdcTransactions || [];
-              const combined = [...safePrev, ...fetchedUsdcData];
+              let cachedData: any[] = [];
+              try {
+                cachedData = JSON.parse(
+                  localStorage.getItem(USDC_TX_CACHE_KEY) || '[]'
+                );
+              } catch (e) {
+                console.error('Cache read error:', e);
+              }
+              const combined = [...cachedData, ...safePrev, ...fetchedUsdcData];
 
               const keyFor = (tx: any) => tx?.id ?? tx?.hash;
               const uniqueTxs = Array.from(
                 new Map(combined.map((tx: any) => [keyFor(tx), tx])).values()
               );
 
-              const finalTxs = uniqueTxs.sort(
+              const finalTxs = uniqueTxs
+                .sort(
                 (a: any, b: any) =>
                   new Date(b?.date ?? b?.time ?? 0).getTime() -
                   new Date(a?.date ?? a?.time ?? 0).getTime()
-              );
+                )
+                .slice(0, 100);
 
               cacheUsdcTransactions(finalTxs);
+              console.log('🔗 SYNC DEBUG: Successfully merged chain data with local cache.');
               return finalTxs;
             });
           } else {
@@ -529,20 +540,29 @@ export default function PortfolioPage() {
             setTransactions((prev: DashboardTx[]) => {
               const safePrev = prev || [];
               const fetchedHederaData = mapped || [];
-              const combined = [...safePrev, ...fetchedHederaData];
+              let cachedData: any[] = [];
+              try {
+                cachedData = JSON.parse(localStorage.getItem(TX_CACHE_KEY) || '[]');
+              } catch (e) {
+                console.error('Cache read error:', e);
+              }
+              const combined = [...cachedData, ...safePrev, ...fetchedHederaData];
 
               const keyFor = (tx: any) => tx?.id ?? tx?.hash;
               const uniqueTxs = Array.from(
                 new Map(combined.map((tx: any) => [keyFor(tx), tx])).values()
               );
 
-              const finalTxs = uniqueTxs.sort(
+              const finalTxs = uniqueTxs
+                .sort(
                 (a: any, b: any) =>
                   new Date(b?.date ?? b?.time ?? 0).getTime() -
                   new Date(a?.date ?? a?.time ?? 0).getTime()
-              );
+                )
+                .slice(0, 100);
 
               cacheTransactions(finalTxs);
+              console.log('🔗 SYNC DEBUG: Successfully merged chain data with local cache.');
               return finalTxs;
             });
           }
@@ -887,11 +907,23 @@ export default function PortfolioPage() {
           date: new Date().toISOString(),
         };
 
-        setTransactions((prev) => {
-          const updatedArray = [newSwapHbarTx, ...(prev || [])];
-          cacheTransactions(updatedArray);
-          return updatedArray;
-        });
+        // Cache-first write to avoid losing optimistic swap tx on refresh/indexer lag.
+        try {
+          const existingCache = JSON.parse(
+            localStorage.getItem(TX_CACHE_KEY) || '[]'
+          );
+          const filteredCache = (existingCache || []).filter(
+            (cachedTx: any) => cachedTx.id !== newSwapHbarTx.id
+          );
+          const updatedCache = [newSwapHbarTx, ...filteredCache].slice(0, 50);
+          localStorage.setItem(TX_CACHE_KEY, JSON.stringify(updatedCache));
+          if (typeof setTransactions === 'function') {
+            setTransactions(updatedCache as DashboardTx[]);
+          }
+          console.log('💾 CACHE DEBUG: Swap saved to local storage.');
+        } catch (error) {
+          console.error('Cache write error:', error);
+        }
         // Ensure we add the converted HBAR amount (not the raw USDC input).
         if (typeof setHbarBalance === 'function') {
           const addedHbar = Number(getConvertedHbar(safeAmount));
