@@ -61,6 +61,9 @@ function SpinnerIcon({ className }: { className?: string }) {
 }
 
 export default function PortfolioPage() {
+  const TX_CACHE_KEY = 'swiftfund_tx_cache';
+  const USDC_TX_CACHE_KEY = 'swiftfund_usdc_tx_cache';
+
   const { user, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const [address, setAddress] = useState<string | null>(null);
@@ -160,6 +163,48 @@ export default function PortfolioPage() {
     },
   };
 
+  const cacheTransactions = (txs: any[]) => {
+    try {
+      localStorage.setItem(TX_CACHE_KEY, JSON.stringify((txs || []).slice(0, 50)));
+    } catch (e) {
+      console.error('❌ CACHE DEBUG: Failed to persist tx cache', e);
+    }
+  };
+
+  const cacheUsdcTransactions = (txs: any[]) => {
+    try {
+      localStorage.setItem(
+        USDC_TX_CACHE_KEY,
+        JSON.stringify((txs || []).slice(0, 50))
+      );
+    } catch (e) {
+      console.error('❌ CACHE DEBUG: Failed to persist USDC tx cache', e);
+    }
+  };
+
+  // Hydrate transaction cache instantly on mount while indexers catch up.
+  useEffect(() => {
+    const cachedTxs = localStorage.getItem(TX_CACHE_KEY);
+    if (cachedTxs) {
+      try {
+        setTransactions(JSON.parse(cachedTxs));
+        console.log('💾 CACHE DEBUG: Loaded transactions from local storage.');
+      } catch (e) {
+        console.error('Cache parse error', e);
+      }
+    }
+
+    const cachedUsdcTxs = localStorage.getItem(USDC_TX_CACHE_KEY);
+    if (cachedUsdcTxs) {
+      try {
+        setUsdcTransactions(JSON.parse(cachedUsdcTxs));
+        console.log('💾 CACHE DEBUG: Loaded USDC transactions from local storage.');
+      } catch (e) {
+        console.error('USDC cache parse error', e);
+      }
+    }
+  }, []);
+
   // Centralized (fail-safe) USD->HBAR conversion helper.
   // Guarantees we never "accidentally" display a 1:1 ratio by falling back to $0.10/HBAR
   // when the live price is missing/unavailable.
@@ -225,7 +270,7 @@ export default function PortfolioPage() {
 
         // 2. Fetch Real Transaction History (Unlocked with API Key)
         const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
-        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${address}&page=1&offset=50&sort=desc&apikey=${apiKey}`;
+        const etherscanUrl = `https://api-sepolia.etherscan.io/api?module=account&action=tokentx&contractaddress=${usdcAddress}&address=${address}&sort=desc&apikey=${apiKey}`;
 
         const historyRes = await fetch(etherscanUrl);
         const historyData = await historyRes.json();
@@ -279,20 +324,27 @@ export default function PortfolioPage() {
                 new Map(combined.map((tx: any) => [keyFor(tx), tx])).values()
               );
 
-              uniqueTxs.sort(
+              const finalTxs = uniqueTxs.sort(
                 (a: any, b: any) =>
                   new Date(b?.date ?? b?.time ?? 0).getTime() -
                   new Date(a?.date ?? a?.time ?? 0).getTime()
               );
 
-              return uniqueTxs;
+              cacheUsdcTransactions(finalTxs);
+              return finalTxs;
             });
           } else {
             // Keep existing history until the indexer catches up (avoids the swap/deposit disappearing right after action).
-            console.log('⚠️ DEBUG: Etherscan returned 0 USDC txs; keeping existing history.');
+            console.warn(
+              '⚠️ SYNC DEBUG: Etherscan returned no valid token transfers. Reason:',
+              historyData?.message || 'Unknown'
+            );
           }
         } else {
-          console.log('⚠️ DEBUG: Etherscan Status:', historyData.message);
+          console.warn(
+            '⚠️ SYNC DEBUG: Etherscan returned no valid token transfers. Reason:',
+            historyData?.message || 'Unknown'
+          );
           // Keep existing history if the API is temporarily failing / not indexed yet.
         }
       } catch (error) {
@@ -484,13 +536,14 @@ export default function PortfolioPage() {
                 new Map(combined.map((tx: any) => [keyFor(tx), tx])).values()
               );
 
-              uniqueTxs.sort(
+              const finalTxs = uniqueTxs.sort(
                 (a: any, b: any) =>
                   new Date(b?.date ?? b?.time ?? 0).getTime() -
                   new Date(a?.date ?? a?.time ?? 0).getTime()
               );
 
-              return uniqueTxs;
+              cacheTransactions(finalTxs);
+              return finalTxs;
             });
           }
         }
@@ -812,7 +865,9 @@ export default function PortfolioPage() {
           };
 
           const withoutDupe = prev.filter((t: any) => t.id !== newTx.id);
-          return [newTx, ...withoutDupe];
+          const updatedArray = [newTx, ...withoutDupe];
+          cacheUsdcTransactions(updatedArray);
+          return updatedArray;
         });
 
         // 2) HBAR receive on Hedera side — show calculated HBAR, not safeAmount
@@ -832,7 +887,11 @@ export default function PortfolioPage() {
           date: new Date().toISOString(),
         };
 
-        setTransactions((prev) => [newSwapHbarTx, ...(prev || [])]);
+        setTransactions((prev) => {
+          const updatedArray = [newSwapHbarTx, ...(prev || [])];
+          cacheTransactions(updatedArray);
+          return updatedArray;
+        });
         // Ensure we add the converted HBAR amount (not the raw USDC input).
         if (typeof setHbarBalance === 'function') {
           const addedHbar = Number(getConvertedHbar(safeAmount));
@@ -1495,7 +1554,8 @@ export default function PortfolioPage() {
                           toast.success('HBAR sent successfully.');
                           // Optimistically update balances + tx list (mirror polling will also reconcile)
                           setHbarBalance((prev) => Math.max(0, prev - sentHbar));
-                          setTransactions((prev) => [
+                          setTransactions((prev) => {
+                            const updatedArray = [
                             {
                               id: receipt?.hash ?? `${Date.now()}-hb-send`,
                               hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
@@ -1510,7 +1570,10 @@ export default function PortfolioPage() {
                               date: new Date().toISOString(),
                             } as any,
                             ...prev,
-                          ]);
+                          ];
+                            cacheTransactions(updatedArray);
+                            return updatedArray;
+                          });
                         } else {
                           // SWIND uses 2 decimals on Hedera.
                           if (!swindPrice || swindPrice <= 0) {
@@ -1567,7 +1630,8 @@ export default function PortfolioPage() {
                           toast.success('SWIND sent successfully.');
                           // Optimistically update balances + tx list (mirror polling will also reconcile)
                           setSwindBalance((prev) => Math.max(0, prev - sentSwind));
-                          setTransactions((prev) => [
+                          setTransactions((prev) => {
+                            const updatedArray = [
                             {
                               id: receipt?.hash ?? `${Date.now()}-swind-send`,
                               hash: tx.hash.slice(0, 8) + '…' + tx.hash.slice(-6),
@@ -1582,7 +1646,10 @@ export default function PortfolioPage() {
                               date: new Date().toISOString(),
                             } as any,
                             ...prev,
-                          ]);
+                          ];
+                            cacheTransactions(updatedArray);
+                            return updatedArray;
+                          });
                         }
 
                         setIsSendModalOpen(false);
